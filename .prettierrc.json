@@ -1,0 +1,7 @@
+{
+  "semi": true,
+  "bracketSpacing": true,
+  "bracketSameLine": true,
+  "arrowParens": "always",
+  "printWidth": 120
+}
