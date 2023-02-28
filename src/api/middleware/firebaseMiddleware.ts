@@ -2,7 +2,6 @@ import Express from "express";
 import { getAuth } from "firebase-admin/auth";
 import { firebaseApp } from "../../boot/firebase";
 import { asyncWrap } from "../../helpers/GlobalFunctions";
-import { DecodedIdToken } from "firebase-admin/auth";
 
 export const checkClaim = (claim: string) => {
     return async (req: Express.Request, res: Express.Response, next: any) => {

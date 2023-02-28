@@ -1,8 +1,10 @@
-import { MatchJSON, SummonerData, SummonerDB } from "../backgroundTasks/interfaces/riot";
+import { MatchDTO } from "../interfaces/MatchInterfaces";
+import { SummonerDB, SummonerData } from "../interfaces/CustomInterfaces";
 import { backgroundLimiter1, backgroundLimiter2, logger, riotApiKey } from "../boot/config";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import DBHelper from "./DBHelper";
+import { TimelineDTO } from "../interfaces/TimelineInterfaces";
 
 export default class RiotHelper {
   private static instance: RiotHelper;
@@ -27,11 +29,11 @@ export default class RiotHelper {
     return RiotHelper.instance;
   }
 
-  async getMatch(matchId: string, useCache = true): Promise<MatchJSON> {
+  async getMatch(matchId: string, useCache = true): Promise<MatchDTO> {
     try {
       if (useCache) {
         let data = await this.dbHelper.getObjectFromRedis(matchId);
-        let match: MatchJSON;
+        let match: MatchDTO;
         if (data) {
           match = JSON.parse(data);
           logger.info(`Match [${matchId}] found in cache`);
@@ -65,7 +67,7 @@ export default class RiotHelper {
     return [];
   }
 
-  async getTimeLine(matchId: string) {
+  async getTimeLine(matchId: string): Promise<TimelineDTO> {
     try {
       logger.info(`Fetching Timeline for [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);

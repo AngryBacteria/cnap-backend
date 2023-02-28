@@ -1,38 +1,4 @@
-export interface SummonerDB {
-    id: string,
-    data: {
-        name?: string,
-        puuid: string,
-        accountId?: string,
-        revisionDate?: string,
-        profileIconId?: string,
-        summonerLevel?: string,
-    },
-}
-
-export enum matchTypeNormalized {
-    NORMAL = 'normal',
-    RANKED = 'ranked'
-}
-
-export enum QueueTypeNormalized {
-    NORMAL_5X5_DRAFT = 400,
-    RANKED_SOLO = 420,
-    NORMAL_5X5_BLIND = 430,
-    RANKED_FLEX = 440
-}
-
-export interface SummonerData {
-    accountId:     string;
-    profileIconId: number;
-    revisionDate:  number;
-    name:          string;
-    id:            string;
-    puuid:         string;
-    summonerLevel: number;
-}
-
-export interface MatchJSON {
+export interface MatchDTO {
     metadata: Metadata;
     info:     Info;
 }

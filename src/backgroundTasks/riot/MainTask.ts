@@ -1,7 +1,8 @@
 import { logger } from "../../boot/config";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { Info, MatchJSON, Participant, SummonerDB } from "../interfaces/riot";
+import { Info, MatchDTO, Participant } from "../../interfaces/MatchInterfaces";
+import { SummonerDB } from "../../interfaces/CustomInterfaces";
 import differenceBy from "lodash/differenceBy";
 import pgPromise from "pg-promise";
 import DBHelper from "../../helpers/DBHelper";
@@ -148,7 +149,7 @@ export default class MainTask {
   //
   //Helper Stuff
   //
-  getParticipantFromMatch(puuid: string, match: MatchJSON): Participant {
+  getParticipantFromMatch(puuid: string, match: MatchDTO): Participant {
     for (const participant of match.info.participants) {
       if (participant.puuid === puuid) {
         return participant;
@@ -157,7 +158,7 @@ export default class MainTask {
     throw new Error(`No summoner found in Match [${match.metadata.matchId}] with PUUID [${puuid}]`);
   }
 
-  createGameInfo(match: MatchJSON) {
+  createGameInfo(match: MatchDTO) {
     const optionalInfoDto: Partial<Info> = match.info;
     delete optionalInfoDto.participants;
     return { ...optionalInfoDto, ...match.metadata };

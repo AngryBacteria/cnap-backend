@@ -1,7 +1,7 @@
 import express from "express";
 import Express from "express";
 import { pg } from "../../../boot/config";
-import { checkClaim } from "../../middleware/firebaseMiddleware";
+import { checkClaim } from "../../middleware/FirebaseMiddleware";
 
 const router = express.Router();
 

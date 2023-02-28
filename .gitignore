@@ -5,3 +5,4 @@
 /.idea
 /api.log
 /combined.log
+/src/boot/serviceAccount.json

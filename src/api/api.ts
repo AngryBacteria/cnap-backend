@@ -1,14 +1,15 @@
 import {expressInstance, pathToEndpoints} from "../boot/config";
 import express from "express";
-import base from "./routes/base/base";
-import match from "./routes/match/match";
-import summoner from "./routes/summoner/summoner";
+import base from "./routes/base/Base";
+import match from "./routes/match/Match";
+import summoner from "./routes/summoner/Summoner";
+import timeline from "./routes/timeline/Timeline";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 
 //Config
 const port = 3000;
-const baseUrl = "/v1";
+const baseUrl = "/api/v1";
 //Swagger
 const options = {
   definition: {
@@ -31,6 +32,7 @@ expressInstance.use(express.static("public"));
 expressInstance.use(baseUrl, base);
 expressInstance.use(baseUrl, match);
 expressInstance.use(baseUrl, summoner);
+expressInstance.use(baseUrl, timeline);
 //Init
 expressInstance.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

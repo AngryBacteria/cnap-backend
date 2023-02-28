@@ -13,7 +13,7 @@ const riotHelper = RiotHelper.getInstance()
 //match_archive
 /**
  * @swagger
- * /v1/match/archive:
+ * /api/v1/match/archive:
  *   get:
  *     description: Endpoint for querying complete (All Participants) Match-V5 Objects
  *     responses:
@@ -69,7 +69,7 @@ router.get(baseUrl + '/archive', async (req: Express.Request, res: Express.Respo
 
 /**
  * @swagger
- * /v1/match/archive/id/{id}:
+ * /api/v1/match/archive/id/{id}:
  *   get:
  *     description: Endpoint for querying a complete (All Participants) Match-V5 Object by ID
  *     responses:
@@ -118,7 +118,7 @@ router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Expres
 //match_v5
 /**
  * @swagger
- * /v1/match/participant/puuid/{puuid}:
+ * /api/v1/match/participant/puuid/{puuid}:
  *   get:
  *     description: Endpoint for querying an incomplete (Only one Participant) Match-V5 Object by the puuid of a Summoner
  *     responses:
@@ -180,7 +180,7 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
 
 /**
  * @swagger
- * /v1/match/participant:
+ * /api/v1/match/participant:
  *   get:
  *     description: Endpoint for querying incomplete (Only one Participant) Match-V5 Objects
  *     responses:
