@@ -6,10 +6,15 @@ import summoner from "./routes/summoner/Summoner";
 import timeline from "./routes/timeline/Timeline";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import cors from 'cors';
 
 //Config
 const port = 3000;
 const baseUrl = "/api/v1";
+
+//cors
+expressInstance.use(cors())
+
 //Swagger
 const options = {
   definition: {
@@ -33,6 +38,7 @@ expressInstance.use(baseUrl, base);
 expressInstance.use(baseUrl, match);
 expressInstance.use(baseUrl, summoner);
 expressInstance.use(baseUrl, timeline);
+
 //Init
 expressInstance.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

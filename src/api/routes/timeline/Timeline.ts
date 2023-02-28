@@ -41,6 +41,7 @@ router.get(baseUrl + '/id/:id', async (req: Express.Request, res: Express.Respon
     const {data, error} = await asyncWrap(riotHelper.getTimeLine(matchId))
     if (data && !error) {
         res.send(data);
+        dbHelper.setObjectInRedis(`timeline_${matchId}`, data, 60 * 24)
         apiLogger.info(`Api-Request for Timeline [${matchId}] with Method: RIOT`);
         return;
     }
