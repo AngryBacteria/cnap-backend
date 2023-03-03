@@ -69,11 +69,19 @@ export default class RiotHelper {
 
   async getTimeLine(matchId: string): Promise<TimelineDTO> {
     try {
+
+      var timeline = await this.dbHelper.getObjectFromRedis('timeline_' + matchId);
+      if(timeline){
+        logger.info(`Timeline [${matchId}] found in cache`);
+        return JSON.parse(timeline);
+      }
+
       logger.info(`Fetching Timeline for [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
       let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${riotApiKey}`;
       let axiosResponse = await axios.get(url);
+      await this.dbHelper.setObjectInRedis('timeline_' + matchId, JSON.stringify(axiosResponse.data), 60 * 60)
       return axiosResponse.data;
     } catch (e: any) {
       throw new Error(`Request for TimeLine [${matchId}] failed with error: ${e}`);

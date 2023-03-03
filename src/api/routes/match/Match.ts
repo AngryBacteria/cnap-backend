@@ -87,7 +87,7 @@ router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Expres
   const match_id = req.params.id;
   let match = await dbHelper.getObjectFromRedis(match_id);
   if (match) {
-    res.send(match);
+    res.send(JSON.parse(match));
     apiLogger.info(`Api-Request for Match [${match_id}] with Method: REDIS`);
     return;
   }

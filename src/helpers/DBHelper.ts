@@ -30,24 +30,20 @@ export default class DBHelper {
 
   async getObjectFromRedis(key: string): Promise<any> {
     try {
-      await cache.connect();
       return await cache.get(key);
-    } catch (e) {
+    } 
+    catch (e) {
       logger.error(`Error getting item [${key}] from cache: ${e}`);
       return null;
-    } finally {
-      await cache.disconnect();
     }
   }
 
-  async setObjectInRedis(key: string, value: any, expiry : number = -1) {
+  async setObjectInRedis(key: string, value: any, expiry: number = -1) {
     try {
-      await cache.connect();
-      (expiry === -1) ? await cache.set(key, value) : cache.set(key, value, {EX: expiry})
-    } catch (e) {
+      expiry === -1 ? await cache.set(key, value) : await cache.set(key, value, {EX: expiry})
+    } 
+    catch (e) {
       logger.error(`Error setting item [${key}] from cache: ${e}`);
-    } finally {
-      await cache.disconnect();
     }
   }
 }

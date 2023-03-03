@@ -4,7 +4,6 @@ import DBHelper from "../../../helpers/DBHelper";
 import RiotHelper from "../../../helpers/RiotHelper";
 import { asyncWrap } from "../../../helpers/GlobalFunctions";
 import { apiLogger } from "../../../boot/config";
-import { TimelineDTO } from "../../../interfaces/TimelineInterfaces";
 
 const router = express.Router();
 const baseUrl = "/timeline";
@@ -27,22 +26,11 @@ const riotHelper = RiotHelper.getInstance()
  *         description: ID of a Riot-Match (for example EUW1_5998862548)
  */
 router.get(baseUrl + '/id/:id', async (req: Express.Request, res: Express.Response) => {
-    
     const matchId = req.params.id;
-    //Redis cache
-    let timeline: TimelineDTO = await dbHelper.getObjectFromRedis(`timeline_${matchId}`);
+    const { data: timeline } = await asyncWrap(riotHelper.getTimeLine(matchId));
     if(timeline) {
-        res.send(timeline);
-        apiLogger.info(`Api-Request for Timeline [${matchId}] with Method: REDIS`);
-        return;
-    }
-
-    //Riot-Query
-    const {data, error} = await asyncWrap(riotHelper.getTimeLine(matchId))
-    if (data && !error) {
-        res.send(data);
-        dbHelper.setObjectInRedis(`timeline_${matchId}`, data, 60 * 24)
-        apiLogger.info(`Api-Request for Timeline [${matchId}] with Method: RIOT`);
+        res.send(timeline)
+        apiLogger.info(`Api-Request for Timeline [${matchId}]`);
         return;
     }
     res.sendStatus(404);
