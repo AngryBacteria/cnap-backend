@@ -1,6 +1,5 @@
 import express from "express";
 import Express from "express";
-import DBHelper from "../../../helpers/DBHelper";
 import RiotHelper from "../../../helpers/RiotHelper";
 import { asyncWrap } from "../../../helpers/GlobalFunctions";
 

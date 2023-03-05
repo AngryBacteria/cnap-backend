@@ -65,12 +65,14 @@ export default class RiotHelper {
     return [];
   }
 
-  async getTimeLine(matchId: string): Promise<TimelineDTO> {
+  async getTimeLine(matchId: string, useCache = true): Promise<TimelineDTO> {
     try {
-      var timeline = await this.dbHelper.getObjectFromRedis('timeline_' + matchId);
-      if(timeline){
-        logger.info(`Timeline [${matchId}] found in cache`);
-        return timeline;
+      if(useCache) {
+        let timeline = await this.dbHelper.getObjectFromRedis('timeline_' + matchId);
+        if(timeline){
+          logger.info(`Timeline [${matchId}] found in cache`);
+          return timeline;
+        }
       }
 
       logger.info(`Fetching Timeline for [${matchId}]`);
