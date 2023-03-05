@@ -3,7 +3,7 @@ import Express from "express";
 import DBHelper from "../../../helpers/DBHelper";
 import RiotHelper from "../../../helpers/RiotHelper";
 import { asyncWrap } from "../../../helpers/GlobalFunctions";
-import { apiLogger } from "../../../boot/config";
+import { logger } from "../../../boot/config";
 
 const router = express.Router();
 const baseUrl = "/match";
@@ -61,7 +61,7 @@ router.get(baseUrl + '/archive', async (req: Express.Request, res: Express.Respo
   const { data, error } = await dbHelper.executeQuery(query);
   if (!error) {
     res.send(data.rows);
-    apiLogger.info(`Api-Request for Match Archive with Method: POSTGRES`);
+    logger.info(`Api-Request for Match Archive with Method: POSTGRES`);
   } else {
     res.status(500).send(error);
   }
@@ -87,8 +87,8 @@ router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Expres
   const match_id = req.params.id;
   let match = await dbHelper.getObjectFromRedis(match_id);
   if (match) {
-    res.send(JSON.parse(match));
-    apiLogger.info(`Api-Request for Match [${match_id}] with Method: REDIS`);
+    res.send(match);
+    logger.info(`Api-Request for Match [${match_id}] with Method: REDIS`);
     return;
   }
 
@@ -101,7 +101,7 @@ router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Expres
   const { data } = await dbHelper.executeQuery(query);
   if (data?.rows.length) {
     res.send(data.rows[0]);
-    apiLogger.info(`Api-Request for Match [${match_id}] with Method: POSTGRES`);
+    logger.info(`Api-Request for Match [${match_id}] with Method: POSTGRES`);
     return;
   }
 
@@ -109,7 +109,7 @@ router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Expres
   const { data: riotData } = await asyncWrap(riotHelper.getMatch(match_id, false));
   if (riotData) {
     res.send(riotData);
-    apiLogger.info(`Api-Request for Match [${match_id}] with Method: RIOT-API`);
+    logger.info(`Api-Request for Match [${match_id}] with Method: RIOT-API`);
     return;
   }
   res.sendStatus(404);
@@ -172,7 +172,7 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
   }
   if (data?.rows.length) {
     res.send(data.rows[0]);
-    apiLogger.info(`Api-Request for Matches of Summoner [${puuid}] with Method: POSTGRES`);
+    logger.info(`Api-Request for Matches of Summoner [${puuid}] with Method: POSTGRES`);
     return;
   }
   res.sendStatus(404);
@@ -231,7 +231,7 @@ router.get(baseUrl + '/participant', async (req: Express.Request, res: Express.R
   const { data, error } = await dbHelper.executeQuery(query);
   if (!error) {
     res.send(data.rows);
-    apiLogger.info(`Api-Request for Match V5 with Method: POSTGRES`);
+    logger.info(`Api-Request for Match V5 with Method: POSTGRES`);
   } else {
     res.status(500).send(error);
   }

@@ -12,7 +12,8 @@ export const riotApiKey = "";
 
 //express
 export const expressInstance = express();
-export const pathToEndpoints = 'src/api/routes/**/*.ts'
+export const apiKey = "";
+export const pathToEndpoints = 'src\\api\\routes\\**\\*.ts'
 
 //postgres
 export const pg = new Pool({
@@ -27,9 +28,11 @@ export const pg = new Pool({
 //redis
 export const redisPassword = "";
 export const cache = createRedis({
-  password: redisPassword,
+  url: `redis://:${redisPassword}@IP:PORT`
 });
-cache.connect().then(() => console.log('connected to cache'))
+
+cache.connect().then(() => console.log('connected to cache')).catch(() => console.log('redis connection error'))
+
 ON_DEATH(async () => {
   await cache.quit()
   console.log('disconnected from cache')
@@ -55,18 +58,8 @@ export const logger = createLogger({
   format: combine(label({ label: "CAP Backend Service" }), timestamp(), myFormat),
   transports: [
     new winston.transports.File({
+      level: 'error',
       filename: "combined.log",
-      maxsize: 500 * 1024 * 1024, // 100MB
-      maxFiles: 2,
-    }),
-  ],
-});
-
-export const apiLogger = createLogger({
-  format: combine(label({ label: "CAP Backend Service" }), timestamp(), myFormat),
-  transports: [
-    new winston.transports.File({
-      filename: "api.log",
       maxsize: 500 * 1024 * 1024, // 100MB
       maxFiles: 2,
     }),

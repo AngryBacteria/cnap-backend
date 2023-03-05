@@ -32,10 +32,8 @@ export default class RiotHelper {
   async getMatch(matchId: string, useCache = true): Promise<MatchDTO> {
     try {
       if (useCache) {
-        let data = await this.dbHelper.getObjectFromRedis(matchId);
-        let match: MatchDTO;
-        if (data) {
-          match = JSON.parse(data);
+        let match = await this.dbHelper.getObjectFromRedis(matchId);
+        if (match) {
           logger.info(`Match [${matchId}] found in cache`);
           return match;
         }
@@ -46,7 +44,7 @@ export default class RiotHelper {
       let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
       let axiosResponse = await axios.get(url);
       let match = axiosResponse.data;
-      await this.dbHelper.setObjectInRedis(matchId, JSON.stringify(match));
+      await this.dbHelper.setObjectInRedis(matchId, match);
       return match;
     } catch (e) {
       throw new Error(`Error while getting the data for match [${matchId}] because: + ${e}`);
@@ -69,11 +67,10 @@ export default class RiotHelper {
 
   async getTimeLine(matchId: string): Promise<TimelineDTO> {
     try {
-
       var timeline = await this.dbHelper.getObjectFromRedis('timeline_' + matchId);
       if(timeline){
         logger.info(`Timeline [${matchId}] found in cache`);
-        return JSON.parse(timeline);
+        return timeline;
       }
 
       logger.info(`Fetching Timeline for [${matchId}]`);
@@ -81,7 +78,7 @@ export default class RiotHelper {
       await backgroundLimiter2.removeTokens(1);
       let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${riotApiKey}`;
       let axiosResponse = await axios.get(url);
-      await this.dbHelper.setObjectInRedis('timeline_' + matchId, JSON.stringify(axiosResponse.data), 60 * 60)
+      await this.dbHelper.setObjectInRedis('timeline_' + matchId, axiosResponse.data, 60 * 60)
       return axiosResponse.data;
     } catch (e: any) {
       throw new Error(`Request for TimeLine [${matchId}] failed with error: ${e}`);
@@ -90,6 +87,7 @@ export default class RiotHelper {
 
   async getSummonerByName(name: string): Promise<SummonerData> {
     try {
+      logger.info(`Fetching Summoner [${name}]`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
@@ -102,6 +100,7 @@ export default class RiotHelper {
 
   async getSummonerByPuuid(puuid: string): Promise<SummonerData> {
     try {
+      logger.info(`Fetching Summoner [${puuid}]`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);

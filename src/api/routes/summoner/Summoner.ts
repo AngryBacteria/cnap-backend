@@ -3,7 +3,7 @@ import Express from "express";
 import DBHelper from "../../../helpers/DBHelper";
 import RiotHelper from "../../../helpers/RiotHelper";
 import { asyncWrap } from "../../../helpers/GlobalFunctions";
-import { apiLogger } from "../../../boot/config";
+import { logger } from "../../../boot/config";
 
 const router = express.Router();
 const baseUrl = "/summoner";
@@ -44,7 +44,7 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
   const { data } = await dbHelper.executeQuery(query);
   if (data?.rows.length) {
     res.send(data.rows[0]);
-    apiLogger.info(`Api-Request for Summoner [${puuid}] with Method: POSTGRES`);
+    logger.info(`Api-Request for Summoner [${puuid}] with Method: POSTGRES`);
     console.timeEnd();
     return;
   }
@@ -53,7 +53,7 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
   const { data: riotData } = await asyncWrap(riotHelper.getSummonerByPuuid(puuid));
   if (riotData) {
     res.send(riotData);
-    apiLogger.info(`Api-Request for Summoner [${puuid}] with Method: RIOT-API`);
+    logger.info(`Api-Request for Summoner [${puuid}] with Method: RIOT-API`);
     console.timeEnd();
     return;
   }
@@ -78,7 +78,7 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   const { data } = await dbHelper.executeQuery(query);
   if (data?.rows.length) {
     res.send(data.rows[0]);
-    apiLogger.info(`Api-Request for Summoner [${name}] with Method: POSTGRES`);
+    logger.info(`Api-Request for Summoner [${name}] with Method: POSTGRES`);
     console.timeEnd();
     return;
   }
@@ -87,7 +87,7 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   const { data: riotData } = await asyncWrap(riotHelper.getSummonerByName(name));
   if (riotData) {
     res.send(riotData);
-    apiLogger.info(`Api-Request for Summoner [${name}] with Method: RIOT-API`);
+    logger.info(`Api-Request for Summoner [${name}] with Method: RIOT-API`);
     console.timeEnd();
     return;
   }
