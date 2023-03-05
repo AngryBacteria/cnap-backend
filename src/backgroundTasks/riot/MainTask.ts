@@ -221,18 +221,18 @@ export default class MainTask {
   }
 
   async intervalUpdate(iteration: number, intervalTime: number) {
-    logger.info(`DATA BEING UPDATED [${iteration}]: ${new Date().toUTCString()}`);
+    logger.notice(`DATA BEING UPDATED [${iteration}]: ${new Date().toUTCString()}`);
     iteration++;
     if (iteration === 10) {
       iteration = 0;
     }
     await this.updateMatchData(0, 10);
-    logger.info(`DATA UPDATED [${iteration}]: ${new Date().toUTCString()}`);
+    logger.notice(`DATA UPDATED [${iteration}]: ${new Date().toUTCString()}`);
     setTimeout(() => this.intervalUpdate(iteration, intervalTime), intervalTime);
   }
 }
 
 const task = new MainTask();
-task.intervalUpdate(0, 1000 * 60 * 60).then(() => {
+task.intervalUpdate(0, 1000 * 60 * 60 * 2).then(() => {
   console.log("first iteration done");
 });
