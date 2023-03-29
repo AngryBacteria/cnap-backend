@@ -3,7 +3,7 @@ import express from "express";
 import { Pool } from "pg";
 import { RateLimiter } from "limiter";
 import winston, { createLogger, format } from "winston";
-import ON_DEATH from 'death';
+import ON_DEATH from "death";
 
 const { combine, timestamp, label, printf } = format;
 
@@ -12,7 +12,7 @@ export const riotApiKey = "CHANGE_ME";
 
 //express
 export const expressInstance = express();
-export const pathToEndpoints = 'CHANGE_ME'
+export const pathToEndpoints = "CHANGE_ME";
 
 //postgres
 export const pg = new Pool({
@@ -25,18 +25,20 @@ export const pg = new Pool({
 });
 
 //redis
-export const redisPassword =
-  "CHANGE_ME";
+export const redisPassword = "CHANGE_ME";
 export const cache = createRedis({
-  url: `redis://:${redisPassword}@localhost:6379`
+  url: `redis://:${redisPassword}@localhost:6379`,
 });
 
-cache.connect().then(() => console.log('connected to cache')).catch(() => console.log('redis connection error'))
+cache
+  .connect()
+  .then(() => console.log("connected to cache"))
+  .catch(() => console.log("redis connection error"));
 
 ON_DEATH(async () => {
-  await cache.quit()
-  console.log('disconnected from cache')
-  process.exit()
+  await cache.quit();
+  console.log("disconnected from cache");
+  process.exit();
 });
 
 //Rate limiters
@@ -58,7 +60,7 @@ export const logger = createLogger({
   format: combine(label({ label: "CAP Backend Service" }), timestamp(), myFormat),
   transports: [
     new winston.transports.File({
-      level: 'debug',
+      level: "debug",
       filename: "combined.log",
       maxsize: 500 * 1024 * 1024, // 100MB
       maxFiles: 2,

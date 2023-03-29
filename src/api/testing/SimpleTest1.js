@@ -5,5 +5,5 @@ export const options = {
   duration: "30s",
 };
 export default function () {
-    http.get('http://localhost:3000/v1/match/archive?queue=440');
+  http.get("http://localhost:3000/v1/match/archive?queue=440");
 }

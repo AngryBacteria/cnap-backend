@@ -118,22 +118,21 @@ export default class MainTask {
     }
   }
 
-  //TODO implement
   async updateSummonerData() {
-    const { data, error } = await this.dbHelper.executeQuery("select * from summoners");
-    if (error) {
-      throw new Error(error.message);
-    }
+    const { data } = await this.dbHelper.executeQuery("select * from summoners");
 
     if (data) {
       for (const summonerDB of data.rows) {
-        console.log(summonerDB.data.summonerLevel, summonerDB.data.profileIconId);
-        //const summonerRiot = await this.getSummonerByPuuid(summonerDB.puuid)
+        const summonerRiot = await this.riotHelper.getSummonerByPuuid(summonerDB.puuid);
+        const query = {
+          text: "UPDATE summoners SET data = $1 WHERE puuid = $2",
+          values: [summonerRiot, summonerDB.data.puuid],
+        };
+        this.dbHelper.executeQuery(query);
       }
     }
   }
 
-  //Todo Test new pg implementation
   async insertSummoner(name: string) {
     let summoner = await this.riotHelper.getSummonerByName(name);
     const query = {
@@ -224,7 +223,10 @@ export default class MainTask {
     logger.info(`DATA BEING UPDATED [${iteration}]: ${new Date().toUTCString()}`);
     iteration++;
     if (iteration === 10) {
+      logger.info(`UPDATING SUMMONER DATA: ${new Date().toUTCString()}`);
+      task.updateSummonerData();
       iteration = 0;
+      logger.info(`UPDATED SUMMONER DATA: ${new Date().toUTCString()}`);
     }
     await this.updateMatchData(0, 10);
     logger.info(`DATA UPDATED [${iteration}]: ${new Date().toUTCString()}`);

@@ -7,8 +7,8 @@ import { logger } from "../../../boot/config";
 
 const router = express.Router();
 const baseUrl = "/match";
-const dbHelper = DBHelper.getInstance()
-const riotHelper = RiotHelper.getInstance()
+const dbHelper = DBHelper.getInstance();
+const riotHelper = RiotHelper.getInstance();
 
 //match_archive
 /**
@@ -41,22 +41,22 @@ const riotHelper = RiotHelper.getInstance()
  *         type: string
  *         description: Riot GameType ID (https://static.developer.riotgames.com/docs/lol/gameTypes.json)
  */
-router.get(baseUrl + '/archive', async (req: Express.Request, res: Express.Response) => {
+router.get(baseUrl + "/archive", async (req: Express.Request, res: Express.Response) => {
   //Query params
-  const {limit, offset, queue, mode, type} = prepareQuery(req)
+  const { limit, offset, queue, mode, type } = prepareQuery(req);
 
   //Query
-  let query = 'SELECT * FROM match_archive WHERE 1=1'
-  if (queue){
-    query = query + ` AND data -> 'info' ->> 'queueId' = '${queue}'`
+  let query = "SELECT * FROM match_archive WHERE 1=1";
+  if (queue) {
+    query = query + ` AND data -> 'info' ->> 'queueId' = '${queue}'`;
   }
-  if (mode){
-    query = query + ` AND data -> 'info'->> 'gameMode' = '${mode}'`
+  if (mode) {
+    query = query + ` AND data -> 'info'->> 'gameMode' = '${mode}'`;
   }
-  if (type){
-    query = query + ` AND data -> 'info'->> 'gameType' = '${type}'`
+  if (type) {
+    query = query + ` AND data -> 'info'->> 'gameType' = '${type}'`;
   }
-  query = query + ` LIMIT ${limit} OFFSET ${offset}`
+  query = query + ` LIMIT ${limit} OFFSET ${offset}`;
 
   const { data, error } = await dbHelper.executeQuery(query);
   if (!error) {
@@ -148,21 +148,21 @@ router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Expres
  */
 router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, res: Express.Response) => {
   //Query params
-  const {limit, offset, queue, mode, type} = prepareQuery(req)
+  const { limit, offset, queue, mode, type } = prepareQuery(req);
   const puuid = req.params.puuid;
 
   //Query
-  let queryString = 'SELECT * FROM match_v5 WHERE 1=1'
-  if (queue){
-    queryString = queryString + ` AND data_match ->> 'queueId' = '${queue}'`
+  let queryString = "SELECT * FROM match_v5 WHERE 1=1";
+  if (queue) {
+    queryString = queryString + ` AND data_match ->> 'queueId' = '${queue}'`;
   }
-  if (mode){
-    queryString = queryString + ` AND data_match ->> 'gameMode' = '${mode}'`
+  if (mode) {
+    queryString = queryString + ` AND data_match ->> 'gameMode' = '${mode}'`;
   }
-  if (type){
-    queryString = queryString + ` AND data_match ->> 'gameType' = '${type}'`
+  if (type) {
+    queryString = queryString + ` AND data_match ->> 'gameType' = '${type}'`;
   }
-  queryString = queryString + ` LIMIT ${limit} OFFSET ${offset}`
+  queryString = queryString + ` LIMIT ${limit} OFFSET ${offset}`;
 
   //postgres
   const { data, error } = await dbHelper.executeQuery(queryString);
@@ -208,25 +208,25 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
  *         type: string
  *         description: Riot GameType ID (https://static.developer.riotgames.com/docs/lol/gameTypes.json)
  */
-router.get(baseUrl + '/participant', async (req: Express.Request, res: Express.Response) => {
+router.get(baseUrl + "/participant", async (req: Express.Request, res: Express.Response) => {
   //Query params
-  const {limit, offset} = prepareQuery(req)
-  let queue = req.query.queue
-  let mode = req.query.mode
-  let type = req.query.type
+  const { limit, offset } = prepareQuery(req);
+  let queue = req.query.queue;
+  let mode = req.query.mode;
+  let type = req.query.type;
 
   //Query
-  let query = 'SELECT * FROM match_v5 WHERE 1=1'
-  if (queue){
-    query = query + ` AND data_match ->> 'queueId' = '${queue}'`
+  let query = "SELECT * FROM match_v5 WHERE 1=1";
+  if (queue) {
+    query = query + ` AND data_match ->> 'queueId' = '${queue}'`;
   }
-  if (mode){
-    query = query + ` AND data_match ->> 'gameMode' = '${mode}'`
+  if (mode) {
+    query = query + ` AND data_match ->> 'gameMode' = '${mode}'`;
   }
-  if (type){
-    query = query + ` AND data_match ->> 'gameType' = '${type}'`
+  if (type) {
+    query = query + ` AND data_match ->> 'gameType' = '${type}'`;
   }
-  query = query + ` LIMIT ${limit} OFFSET ${offset}`
+  query = query + ` LIMIT ${limit} OFFSET ${offset}`;
 
   const { data, error } = await dbHelper.executeQuery(query);
   if (!error) {
@@ -237,13 +237,13 @@ router.get(baseUrl + '/participant', async (req: Express.Request, res: Express.R
   }
 });
 
-function prepareQuery(req:  Express.Request){
-  let queue = req.query.queue
-  let mode = req.query.mode
-  let type = req.query.type
+function prepareQuery(req: Express.Request) {
+  let queue = req.query.queue;
+  let mode = req.query.mode;
+  let type = req.query.type;
   let page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
   const limit = 25;
   const offset = (page - 1) * limit;
-  return {limit, offset, queue, mode, type}
+  return { limit, offset, queue, mode, type };
 }
 export default router;

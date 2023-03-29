@@ -5,7 +5,7 @@ import { asyncWrap } from "../../../helpers/GlobalFunctions";
 
 const router = express.Router();
 const baseUrl = "/timeline";
-const riotHelper = RiotHelper.getInstance()
+const riotHelper = RiotHelper.getInstance();
 
 /**
  * @swagger
@@ -22,13 +22,13 @@ const riotHelper = RiotHelper.getInstance()
  *         type: string
  *         description: ID of a Riot-Match (for example EUW1_5998862548)
  */
-router.get(baseUrl + '/id/:id', async (req: Express.Request, res: Express.Response) => {
-    const matchId = req.params.id;
-    const { data: timeline } = await asyncWrap(riotHelper.getTimeLine(matchId));
-    if(timeline) {
-        res.send(timeline)
-        return;
-    }
-    res.sendStatus(404);
-  });
-  export default router;
+router.get(baseUrl + "/id/:id", async (req: Express.Request, res: Express.Response) => {
+  const matchId = req.params.id;
+  const { data: timeline } = await asyncWrap(riotHelper.getTimeLine(matchId));
+  if (timeline) {
+    res.send(timeline);
+    return;
+  }
+  res.sendStatus(404);
+});
+export default router;

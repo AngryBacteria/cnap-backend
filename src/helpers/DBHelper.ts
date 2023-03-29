@@ -29,7 +29,7 @@ export default class DBHelper {
   }
 
   /**
-   * Gets a Javascript Object from the redis database and parses it with JSON.parse() 
+   * Gets a Javascript Object from the redis database and parses it with JSON.parse()
    * @param key Unique Key for the redis database
    * @returns Response from redis. Either null or the Object
    */
@@ -38,10 +38,8 @@ export default class DBHelper {
       const obj = await cache.get(key);
       if (obj) {
         return JSON.parse(obj);
-      }
-      else return null;
-    } 
-    catch (e) {
+      } else return null;
+    } catch (e) {
       logger.error(`Error getting item [${key}] from cache: ${e}`);
       return null;
     }
@@ -55,29 +53,29 @@ export default class DBHelper {
    */
   async setObjectInRedis(key: string, value: any, expiry: number = -1) {
     try {
-      expiry === -1 ? await cache.set(key, JSON.stringify(value)) : await cache.set(key, JSON.stringify(value), {EX: expiry})
-    } 
-    catch (e) {
+      expiry === -1
+        ? await cache.set(key, JSON.stringify(value))
+        : await cache.set(key, JSON.stringify(value), { EX: expiry });
+    } catch (e) {
       logger.error(`Error setting item [${key}] from cache: ${e}`);
     }
   }
 
-    /**
-   * Gets an element from the redis database 
+  /**
+   * Gets an element from the redis database
    * @param key Unique Key for the redis database
    * @returns Response from redis. Either null or the data
    */
-    async getElementFromRedis(key: string) {
-      try {
-        return await cache.get(key);
-      } 
-      catch (e) {
-        logger.error(`Error getting item [${key}] from cache: ${e}`);
-        return null;
-      }
+  async getElementFromRedis(key: string) {
+    try {
+      return await cache.get(key);
+    } catch (e) {
+      logger.error(`Error getting item [${key}] from cache: ${e}`);
+      return null;
     }
+  }
 
-      /**
+  /**
    * Method to set an item in the Redis Database
    * @param key  Unique Key for the redis database
    * @param value Item to be saved in the database
@@ -85,9 +83,8 @@ export default class DBHelper {
    */
   async setElementInRedis(key: string, value: any, expiry: number = -1) {
     try {
-      expiry === -1 ? await cache.set(key, value) : await cache.set(key, value, {EX: expiry})
-    } 
-    catch (e) {
+      expiry === -1 ? await cache.set(key, value) : await cache.set(key, value, { EX: expiry });
+    } catch (e) {
       logger.error(`Error setting item [${key}] from cache: ${e}`);
     }
   }

@@ -7,8 +7,8 @@ import { logger } from "../../../boot/config";
 
 const router = express.Router();
 const baseUrl = "/summoner";
-const dbHelper = DBHelper.getInstance()
-const riotHelper = RiotHelper.getInstance()
+const dbHelper = DBHelper.getInstance();
+const riotHelper = RiotHelper.getInstance();
 
 /**
  * @swagger
