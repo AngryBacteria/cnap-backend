@@ -26,7 +26,6 @@ const riotHelper = RiotHelper.getInstance()
  *         description: page
  */
 router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
-  console.time();
   const limit = 25;
   let page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
   const offset = (page - 1) * limit;
@@ -36,7 +35,6 @@ router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
   } else {
     res.status(500).send(error);
   }
-  console.timeEnd();
 });
 
 /**
@@ -55,7 +53,6 @@ router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
  *         description: puuid of a summoner
  */
 router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.Response) => {
-  console.time();
   const puuid = req.params.puuid;
 
   //postgres
@@ -68,7 +65,6 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
   if (data?.rows.length) {
     res.send(data.rows[0]);
     logger.info(`Api-Request for Summoner [${puuid}] with Method: POSTGRES`);
-    console.timeEnd();
     return;
   }
 
@@ -77,11 +73,9 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
   if (riotData) {
     res.send(riotData);
     logger.info(`Api-Request for Summoner [${puuid}] with Method: RIOT-API`);
-    console.timeEnd();
     return;
   }
   res.status(404).send(`No summoner found with puuid [${puuid}]`);
-  console.timeEnd();
 });
 
 /**
@@ -100,7 +94,6 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
  *         description: name of a summoner
  */
 router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Response) => {
-  console.time();
   const name = req.params.name;
 
   //postgres
@@ -113,7 +106,6 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   if (data?.rows.length) {
     res.send(data.rows[0]);
     logger.info(`Api-Request for Summoner [${name}] with Method: POSTGRES`);
-    console.timeEnd();
     return;
   }
 
@@ -122,11 +114,9 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   if (riotData) {
     res.send(riotData);
     logger.info(`Api-Request for Summoner [${name}] with Method: RIOT-API`);
-    console.timeEnd();
     return;
   }
   res.status(404).send(`No summoner found with name [${name}]`);
-  console.timeEnd();
 });
 
 export default router;
