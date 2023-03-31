@@ -89,7 +89,7 @@ export default class RiotHelper {
 
   async getSummonerByName(name: string): Promise<SummonerData> {
     try {
-      logger.info(`Fetching Summoner [${name}]`);
+      logger.info(`Fetching Summoner by name [${name}]`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
@@ -102,7 +102,7 @@ export default class RiotHelper {
 
   async getSummonerByPuuid(puuid: string): Promise<SummonerData> {
     try {
-      logger.info(`Fetching Summoner [${puuid}]`);
+      logger.info(`Fetching Summoner by puuid [${puuid}]`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);

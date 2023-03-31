@@ -224,7 +224,7 @@ export default class MainTask {
     iteration++;
     if (iteration === 10) {
       logger.info(`UPDATING SUMMONER DATA: ${new Date().toUTCString()}`);
-      task.updateSummonerData();
+      await task.updateSummonerData();
       iteration = 0;
       logger.info(`UPDATED SUMMONER DATA: ${new Date().toUTCString()}`);
     }
