@@ -15,6 +15,8 @@ const riotHelper = RiotHelper.getInstance();
  * /api/v1/summoner:
  *   get:
  *     description: Endpoint to get all available summoners. Limits to 25 at a time. Supports pagination with the query parameter "?page"
+ *     tags:
+ *      - summoner  
  *     responses:
  *       200:
  *         description: All available summoners
@@ -42,6 +44,8 @@ router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
  * /api/v1/summoner/puuid/{puuid}:
  *   get:
  *     description: Endpoint to get a specific summoner by its puuid. If present in postgres it fetches it that way. Else it uses the Riot-Api directly
+ *     tags:
+ *      - summoner
  *     responses:
  *       200:
  *         description: Summoner Object
@@ -83,6 +87,8 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
  * /api/v1/summoner/name/{name}:
  *   get:
  *     description: Endpoint to get a specific summoner by its name. If present in postgres it fetches it that way. Else it uses the Riot-Api directly
+ *     tags:
+ *      - summoner
  *     responses:
  *       200:
  *         description: Summoner Object

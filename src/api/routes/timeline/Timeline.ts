@@ -12,6 +12,8 @@ const riotHelper = RiotHelper.getInstance();
  * /api/v1/timeline/id/{id}:
  *   get:
  *     description: Endpoint for querying complete timeline objects from either the cache or Riot-API by their ID
+ *     tags:
+ *      - timeline
  *     responses:
  *       200:
  *         description: Single timeline object
