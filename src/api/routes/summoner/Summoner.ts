@@ -67,7 +67,7 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
   };
   const { data } = await dbHelper.executeQuery(query);
   if (data?.rows.length) {
-    res.send(data.rows[0]);
+    res.send(data.rows[0].data);
     logger.info(`Api-Request for Summoner [${puuid}] with Method: POSTGRES`);
     return;
   }
@@ -110,7 +110,7 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   };
   const { data } = await dbHelper.executeQuery(query);
   if (data?.rows.length) {
-    res.send(data.rows[0]);
+    res.send(data.rows[0].data);
     logger.info(`Api-Request for Summoner [${name}] with Method: POSTGRES`);
     return;
   }
