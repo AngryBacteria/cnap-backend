@@ -152,7 +152,7 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
   const puuid = req.params.puuid;
 
   //Query
-  let queryString = "SELECT * FROM match_v5 WHERE 1=1";
+  let queryString = `SELECT * FROM match_v5 WHERE puuid = ${puuid}`;
   if (queue) {
     queryString = queryString + ` AND data_match ->> 'queueId' = '${queue}'`;
   }
