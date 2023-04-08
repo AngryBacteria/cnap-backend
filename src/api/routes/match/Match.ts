@@ -177,7 +177,7 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
     return;
   }
   if (data?.rows.length) {
-    res.send(data.rows[0]);
+    res.send(data.rows);
     logger.info(`Api-Request for Matches of Summoner [${puuid}] with Method: POSTGRES`);
     return;
   }
