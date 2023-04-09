@@ -58,6 +58,7 @@ router.get(baseUrl + "/archive", async (req: Express.Request, res: Express.Respo
   if (type) {
     query = query + ` AND data -> 'info'->> 'gameType' = '${type}'`;
   }
+  query = query + ` ORDER BY game_creation DESC`;
   query = query + ` LIMIT ${limit} OFFSET ${offset}`;
 
   const { data, error } = await dbHelper.executeQuery(query);
@@ -168,6 +169,7 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
   if (type) {
     queryString = queryString + ` AND data_match ->> 'gameType' = '${type}'`;
   }
+  queryString = queryString + ` ORDER BY game_creation DESC`;
   queryString = queryString + ` LIMIT ${limit} OFFSET ${offset}`;
 
   //postgres
