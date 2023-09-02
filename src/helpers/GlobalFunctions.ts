@@ -1,5 +1,10 @@
 import Express from "express";
 
+/**
+ * Wrapper function for any sort of async promise. Works by executing the promise
+ * and then either returning data and no error or no data and an error.
+ * Makes the code far more readable as no try / catch blocks are needed anymore
+ */
 export async function asyncWrap(promise: Promise<any>): Promise<{ data: any; error: any }> {
   try {
     const data = await promise;

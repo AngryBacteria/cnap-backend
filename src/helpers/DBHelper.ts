@@ -13,6 +13,13 @@ export default class DBHelper {
     return DBHelper.instance;
   }
 
+  /**
+   * Function that executes a PostgreSQL query. It first fetches a client from the postgres pool.
+   * If a client was able to be fetched it executes the query. If any errors occur it returns an error and no data.
+   * If the query was successful it returns data and no error.
+   * @param query SQL query that should be executed
+   * @returns
+   */
   async executeQuery(query: any) {
     const { data: client, error: clientError } = await asyncWrap(pg.connect());
     if (client) {

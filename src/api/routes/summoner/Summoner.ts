@@ -16,7 +16,7 @@ const riotHelper = RiotHelper.getInstance();
  *   get:
  *     description: Endpoint to get all available summoners. Limits to 25 at a time. Supports pagination with the query parameter "?page"
  *     tags:
- *      - summoner  
+ *      - summoner
  *     responses:
  *       200:
  *         description: All available summoners

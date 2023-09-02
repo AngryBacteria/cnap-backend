@@ -29,6 +29,10 @@ export default class RiotHelper {
     return RiotHelper.instance;
   }
 
+  /**
+   * Function to fetch a specific match from the RiotAPI. If applicable it uses
+   * the Redis Cache. Uses Rate Limiting and Axios Retries
+   */
   async getMatch(matchId: string, useCache = true): Promise<MatchDTO> {
     try {
       if (useCache) {
@@ -51,6 +55,10 @@ export default class RiotHelper {
     }
   }
 
+  /**
+   * Function to fetch a MatchList for a specific summoner from the RiotAPI.
+   * Uses Rate Limiting and Axios Retries
+   */
   async getMatchList(summoner: SummonerDB, count = 100, offset = 0): Promise<string[]> {
     try {
       logger.info(`Fetching Matchlist for [${summoner.data.name}]`);
@@ -65,6 +73,10 @@ export default class RiotHelper {
     return [];
   }
 
+  /**
+   * Function to fetch a TimeLine for a specific match from the RiotAPI. If applicable it uses
+   * the Redis Cache. Uses Rate Limiting and Axios Retries
+   */
   async getTimeLine(matchId: string, useCache = true): Promise<TimelineDTO> {
     try {
       if (useCache) {
@@ -87,6 +99,9 @@ export default class RiotHelper {
     }
   }
 
+  /**
+   * Fetches a Summoner by name from the RiotAPI
+   */
   async getSummonerByName(name: string): Promise<SummonerData> {
     try {
       logger.info(`Fetching Summoner by name [${name}]`);
@@ -100,6 +115,9 @@ export default class RiotHelper {
     }
   }
 
+  /**
+   * Fetches a Summoner by PUUID from the RiotAPI
+   */
   async getSummonerByPuuid(puuid: string): Promise<SummonerData> {
     try {
       logger.info(`Fetching Summoner by puuid [${puuid}]`);

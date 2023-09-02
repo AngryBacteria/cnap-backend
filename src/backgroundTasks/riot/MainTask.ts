@@ -27,7 +27,11 @@ export default class MainTask {
   //
   //DB Stuff
   //
-  async prepareMatches(summoner: any, matchData: any[], archiveData: any[], count = 100, offset = 0) {
+  /**
+   * Takes in a summoner, an array for the matchData and one for the archiveData.
+   * It fills both arrays with the relevant data from the api response
+   */
+  async prepareMatches(summoner: SummonerDB, matchData: any[], archiveData: any[], count = 100, offset = 0) {
     const matchIds = await this.riotHelper.getMatchList(summoner, count, offset);
     for (const matchId of matchIds) {
       try {
@@ -53,6 +57,12 @@ export default class MainTask {
     }
   }
 
+  /**
+   * For all summoners it inserts all new games into the database.
+   * If the match already exists (recognized by match_id_puuid or match_id) it does not insert it
+   * @param offset where to start
+   * @param count amount of matches to fetch
+   */
   async updateMatchData(offset: number = 0, count: number = 6) {
     const { data, error } = await this.dbHelper.executeQuery("select * from summoners");
     if (error) {
@@ -71,6 +81,7 @@ export default class MainTask {
             { table: "match_v5" }
           );
           const queryV5 = pgp.helpers.insert(matchData, columsV5) + " ON CONFLICT (match_id_puuid) DO NOTHING";
+
           const columsArchive = new pgp.helpers.ColumnSet(["match_id", "data"], { table: "match_archive" });
           const queryArchive = pgp.helpers.insert(archiveData, columsArchive) + " ON CONFLICT (match_id) DO NOTHING";
 
@@ -83,6 +94,12 @@ export default class MainTask {
     }
   }
 
+  /**
+   * For a specific summoner it inserts all new games into the database.
+   * If the match already exists (recognized by match_id_puuid or match_id) it does not insert it
+   * @param offset where to start
+   * @param count amount of matches to fetch
+   */
   async updateMatchDataForSummoner(puuid: string, offset: number = 0, count: number = 6) {
     const query = {
       text: "SELECT * FROM summoners WHERE puuid = $1",
@@ -106,6 +123,7 @@ export default class MainTask {
             { table: "match_v5" }
           );
           const queryV5 = pgp.helpers.insert(matchData, columsV5) + " ON CONFLICT (match_id_puuid) DO NOTHING";
+
           const columsArchive = new pgp.helpers.ColumnSet(["match_id", "data"], { table: "match_archive" });
           const queryArchive = pgp.helpers.insert(archiveData, columsArchive) + " ON CONFLICT (match_id) DO NOTHING";
 
@@ -118,6 +136,10 @@ export default class MainTask {
     }
   }
 
+  /**
+   * For each summoner in the database it updates the data by fetching new data from the riot api
+   * and replacing the existing db data
+   */
   async updateSummonerData() {
     const { data } = await this.dbHelper.executeQuery("select * from summoners");
 
@@ -133,6 +155,9 @@ export default class MainTask {
     }
   }
 
+  /**
+   * Inserts a summoner into the database. First it searches the summoner in the riot api
+   */
   async insertSummoner(name: string) {
     let summoner = await this.riotHelper.getSummonerByName(name);
     const query = {
@@ -148,6 +173,9 @@ export default class MainTask {
   //
   //Helper Stuff
   //
+  /**
+   * Extracts a specific participant from a match object
+   */
   getParticipantFromMatch(puuid: string, match: MatchDTO): Participant {
     for (const participant of match.info.participants) {
       if (participant.puuid === puuid) {
@@ -157,12 +185,22 @@ export default class MainTask {
     throw new Error(`No summoner found in Match [${match.metadata.matchId}] with PUUID [${puuid}]`);
   }
 
+  /**
+   * Takes a Match Object and extracts the relevant information.
+   * It removes the data for the individual participants
+   * @param match Match object
+   */
   createGameInfo(match: MatchDTO) {
     const optionalInfoDto: Partial<Info> = match.info;
     delete optionalInfoDto.participants;
     return { ...optionalInfoDto, ...match.metadata };
   }
 
+  /**
+   * Searches differences in the database between the match_v5 and match_archive tables.
+   * Returns a list of objects that are not in the respective other database
+   * Only used to troubleshoot / debug
+   */
   async getDifferencesInDB() {
     const { data } = await this.dbHelper.executeQuery("select match_id from match_v5");
     const { data: data2 } = await this.dbHelper.executeQuery("select match_id from match_archive");
@@ -174,6 +212,9 @@ export default class MainTask {
     console.log(diff2);
   }
 
+  /**
+   * List of summoners that should be inserted into the database
+   */
   async insertAllSummoners() {
     let summoners = [
       "Baywack",
@@ -205,6 +246,9 @@ export default class MainTask {
     });
   }
 
+  /**
+   * Function to fill the entire database with data for all summoners
+   */
   async fillMatchData() {
     for (let i = 0; i < 2000; i = i + 95) {
       logger.info(`INSERTING WITH I = ${i}`);
@@ -212,6 +256,10 @@ export default class MainTask {
     }
   }
 
+  /**
+   * Fills the database with the last 2000 (max amount from riot api) games for a specific summoner
+   * @param puuid PUUID (riot internal id) of the summoner
+   */
   async fillMatchDataForSummoner(puuid: string) {
     for (let i = 0; i < 2000; i = i + 95) {
       logger.info(`INSERTING WITH I = ${i}`);
@@ -219,6 +267,10 @@ export default class MainTask {
     }
   }
 
+  /**
+   * Function to update the data in a fixed interval
+   * @param intervalTime Time in milliseconds to wait for the next iteration
+   */
   async intervalUpdate(iteration: number, intervalTime: number) {
     logger.info(`DATA BEING UPDATED [${iteration}]: ${new Date().toUTCString()}`);
     iteration++;
