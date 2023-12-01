@@ -213,40 +213,6 @@ export default class MainTask {
   }
 
   /**
-   * List of summoners that should be inserted into the database
-   */
-  async insertAllSummoners() {
-    let summoners = [
-      "Baywack",
-      "AngryBacteria",
-      "Lonely Toplaner",
-      "GLOMVE",
-      "HMS fangirl",
-      "hide on büschli",
-      "viranyx",
-      "Hide in the Dark",
-      "Prequ",
-      "pentaskill",
-      "WhatThePlay",
-      "Alraune22",
-      "Theera3rd",
-      "tresserhorn",
-      "Gnerfedurf",
-      "nolsterpolster",
-      "UnifixingGoblin5",
-      "Árexo",
-      "bruhthefighter",
-      "PoIlux",
-      "Prequ1",
-      "Aw3s0m3mag1c",
-    ];
-
-    summoners.forEach((sum) => {
-      this.insertSummoner(sum).then();
-    });
-  }
-
-  /**
    * Function to fill the entire database with data for all summoners
    */
   async fillMatchData() {

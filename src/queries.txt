@@ -43,3 +43,27 @@ GROUP BY
 	champion_id
 ORDER BY
 	total_games DESC;
+
+------------------------------------------------------------------------------------------------
+
+create function summoner_summary_v1(puuid_input text)
+  returns setof match_v5
+as
+$$
+	select 
+		data_participant -> 'win' as "win",
+		data_participant -> 'teamPosition' as "teamPosition", 
+		data_participant -> 'deaths' as "deaths", 
+		data_participant -> 'kills' as "kills",
+		data_participant -> 'assists' as "assists",
+		data_participant -> 'championId' as "championId",
+		data_participant -> 'timePlayed' as "timePlayed",
+		data_participant -> 'totalTimeSpentDead' as "totalTimeSpentDead",
+		data_participant -> 'gameEndedInSurrender' as "gameEndedInSurrender"
+	from 
+		match_v5 
+	where 
+		puuid = puuid_input;
+$$
+language sql
+stable;

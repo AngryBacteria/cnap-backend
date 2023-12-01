@@ -125,4 +125,24 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   res.status(404).send(`No summoner found with name [${name}]`);
 });
 
+router.get(baseUrl + "/summary/:puuid", async (req: Express.Request, res: Express.Response) => {
+  const puuid = req.params.puuid;
+
+  //postgres
+  const query = {
+    name: "fetch_summonerSummary_by_puuid",
+    text: "select * from summoner_summary_v1('$1')",
+    values: [puuid],
+  };
+
+  const { data } = await dbHelper.executeQuery(query);
+  if (data?.rows.length) {
+    res.send(data.rows[0].data);
+    logger.info(`Api-Request for SummonerSummary [${puuid}] with Method: POSTGRES`);
+    return;
+  }
+
+  res.status(404).send(`No SummonerSummary found with puuid [${puuid}]`);
+});
+
 export default router;

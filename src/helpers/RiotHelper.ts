@@ -42,7 +42,7 @@ export default class RiotHelper {
           return match;
         }
       }
-      logger.info(`Fetching Match [${matchId}]`);
+      logger.info(`Fetching Match with Riot-API [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
       let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
@@ -61,7 +61,7 @@ export default class RiotHelper {
    */
   async getMatchList(summoner: SummonerDB, count = 100, offset = 0): Promise<string[]> {
     try {
-      logger.info(`Fetching Matchlist for [${summoner.data.name}]`);
+      logger.info(`Fetching Matchlist with Riot-API for [${summoner.data.name}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
       let url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.data.puuid}/ids?start=${offset}&count=${count}&api_key=${riotApiKey}`;
@@ -87,7 +87,7 @@ export default class RiotHelper {
         }
       }
 
-      logger.info(`Fetching Timeline for [${matchId}]`);
+      logger.info(`Fetching Timeline with Riot-API for [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
       let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${riotApiKey}`;
@@ -104,7 +104,7 @@ export default class RiotHelper {
    */
   async getSummonerByName(name: string): Promise<SummonerData> {
     try {
-      logger.info(`Fetching Summoner by name [${name}]`);
+      logger.info(`Fetching Summoner with Riot-API by name [${name}]`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
@@ -120,7 +120,7 @@ export default class RiotHelper {
    */
   async getSummonerByPuuid(puuid: string): Promise<SummonerData> {
     try {
-      logger.info(`Fetching Summoner by puuid [${puuid}]`);
+      logger.info(`Fetching Summoner with Riot-API by puuid [${puuid}]`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
