@@ -125,6 +125,23 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
   res.status(404).send(`No summoner found with name [${name}]`);
 });
 
+/**
+ * @swagger
+ * /api/v1/summoner/puuid/{puuid}:
+ *   get:
+ *     description: Endpoint to get a summary of a summoner by its puuid
+ *     tags:
+ *      - summoner
+ *     responses:
+ *       200:
+ *         description: Summoner summary Object
+ *     parameters:
+ *       - name: puuid
+ *         in: path
+ *         required: true
+ *         type: string
+ *         description: puuid of a summoner
+ */
 router.get(baseUrl + "/summary/:puuid", async (req: Express.Request, res: Express.Response) => {
   const puuid = req.params.puuid;
 

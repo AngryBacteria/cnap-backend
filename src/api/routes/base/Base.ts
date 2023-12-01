@@ -1,7 +1,6 @@
 import express from "express";
 import Express from "express";
 import { pg } from "../../../boot/config";
-import { checkClaim } from "../../middleware/FirebaseMiddleware";
 
 const router = express.Router();
 
@@ -10,10 +9,6 @@ router.get("/hello", (req: Express.Request, res: Express.Response) => {
     console.log("there is an id: ", req.query.id);
   }
   res.send("Hello World!");
-});
-
-router.get("/admin", checkClaim("admin"), (req: Express.Request, res: Express.Response) => {
-  res.send("secured endpoint");
 });
 
 router.get("/now", async (req: Express.Request, res: Express.Response) => {
