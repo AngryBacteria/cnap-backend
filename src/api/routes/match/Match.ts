@@ -46,28 +46,15 @@ const riotHelper = RiotHelper.getInstance();
 router.get(baseUrl + "/archive", async (req: Express.Request, res: Express.Response) => {
   //Query params
   const { limit, offset, queue, mode, type } = prepareQuery(req);
-
-  //Query
-  let query = "SELECT * FROM match_archive WHERE 1=1";
-  if (queue) {
-    query = query + ` AND data -> 'info' ->> 'queueId' = '${queue}'`;
-  }
-  if (mode) {
-    query = query + ` AND data -> 'info'->> 'gameMode' = '${mode}'`;
-  }
-  if (type) {
-    query = query + ` AND data -> 'info'->> 'gameType' = '${type}'`;
-  }
-  query = query + ` ORDER BY game_creation DESC`;
-  query = query + ` LIMIT ${limit} OFFSET ${offset}`;
-
-  const { data, error } = await dbHelper.executeQuery(query);
-  if (!error) {
-    res.send(data.rows);
-    logger.info(`Api-Request for Match Archive with Method: POSTGRES`);
-  } else {
-    res.status(500).send(error);
-  }
+  const result = await dbHelper.getMatchArchive({
+    limit: limit,
+    offset: offset,
+    queue: Number(queue as string),
+    mode: mode as string,
+    type: type as string,
+  });
+  logger.info(`Api-Request for Archive-Matches with Method: MongoDB`);
+  return res.send(result);
 });
 
 /**
@@ -88,25 +75,14 @@ router.get(baseUrl + "/archive", async (req: Express.Request, res: Express.Respo
  *         description: ID of the Match (for example EUW1_5998862548)
  */
 router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Express.Response) => {
-  //redis
   const match_id = req.params.id;
-  let match = await dbHelper.getObjectFromRedis(match_id);
-  if (match) {
-    res.send(match);
-    logger.info(`Api-Request for Match [${match_id}] with Method: REDIS`);
-    return;
-  }
-
-  //postgres
-  const query = {
-    name: "fetch_match_by_id",
-    text: "SELECT * FROM match_archive WHERE match_id = $1",
-    values: [match_id],
-  };
-  const { data } = await dbHelper.executeQuery(query);
-  if (data?.rows.length) {
-    res.send(data.rows[0]);
-    logger.info(`Api-Request for Match [${match_id}] with Method: POSTGRES`);
+  //DB
+  const results = await dbHelper.getMatchArchive({
+    id: match_id,
+  });
+  if (results.length >= 1 && results[0]) {
+    logger.info(`Api-Request for Match [${match_id}] with Method: MongoDB`);
+    res.send(results[0]);
     return;
   }
 
@@ -158,29 +134,18 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
   const { limit, offset, queue, mode, type } = prepareQuery(req);
   const puuid = req.params.puuid;
 
-  //Query
-  let queryString = `SELECT * FROM match_v5 WHERE puuid = '${puuid}'`;
-  if (queue) {
-    queryString = queryString + ` AND data_match ->> 'queueId' = '${queue}'`;
-  }
-  if (mode) {
-    queryString = queryString + ` AND data_match ->> 'gameMode' = '${mode}'`;
-  }
-  if (type) {
-    queryString = queryString + ` AND data_match ->> 'gameType' = '${type}'`;
-  }
-  queryString = queryString + ` ORDER BY game_creation DESC`;
-  queryString = queryString + ` LIMIT ${limit} OFFSET ${offset}`;
+  const results = await dbHelper.getMatchesV5({
+    puuid: puuid,
+    limit: limit,
+    offset: offset,
+    queue: Number(queue),
+    mode: mode as string,
+    type: type as string,
+  });
 
-  //postgres
-  const { data, error } = await dbHelper.executeQuery(queryString);
-  if (error) {
-    res.status(500).send(error);
-    return;
-  }
-  if (data?.rows.length) {
-    res.send(data.rows);
-    logger.info(`Api-Request for Matches of Summoner [${puuid}] with Method: POSTGRES`);
+  if (results.length >= 1 && results[0]) {
+    logger.info(`Api-Request for Matches of Summoner [${puuid}] with Method: MongoDB`);
+    res.send(results[0]);
     return;
   }
   res.sendStatus(404);
@@ -220,31 +185,22 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
  */
 router.get(baseUrl + "/participant", async (req: Express.Request, res: Express.Response) => {
   //Query params
-  const { limit, offset } = prepareQuery(req);
-  let queue = req.query.queue;
-  let mode = req.query.mode;
-  let type = req.query.type;
+  const { limit, offset, queue, mode, type } = prepareQuery(req);
 
-  //Query
-  let query = "SELECT * FROM match_v5 WHERE 1=1";
-  if (queue) {
-    query = query + ` AND data_match ->> 'queueId' = '${queue}'`;
-  }
-  if (mode) {
-    query = query + ` AND data_match ->> 'gameMode' = '${mode}'`;
-  }
-  if (type) {
-    query = query + ` AND data_match ->> 'gameType' = '${type}'`;
-  }
-  query = query + ` LIMIT ${limit} OFFSET ${offset}`;
+  const results = await dbHelper.getMatchesV5({
+    limit: limit,
+    offset: offset,
+    queue: Number(queue),
+    mode: mode as string,
+    type: type as string,
+  });
 
-  const { data, error } = await dbHelper.executeQuery(query);
-  if (!error) {
-    res.send(data.rows);
-    logger.info(`Api-Request for Match V5 with Method: POSTGRES`);
-  } else {
-    res.status(500).send(error);
+  if (results.length >= 1) {
+    logger.info(`Api-Request for Participant-Matches with Method: MongoDB`);
+    res.send(results);
+    return;
   }
+  res.sendStatus(404);
 });
 
 function prepareQuery(req: Express.Request) {

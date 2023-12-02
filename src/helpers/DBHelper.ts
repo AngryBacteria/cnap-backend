@@ -1,16 +1,123 @@
-import { cache, logger, pg } from "../boot/config";
+import { MongoClient, ServerApiVersion } from "mongodb";
+import { cache, logger, mongoURL, pg } from "../boot/config";
 import { asyncWrap } from "./GlobalFunctions";
+import { MatchArchiveDB, MatchV5DB, SummonerDB } from "../interfaces/DBInterfaces";
 
 export default class DBHelper {
   private static instance: DBHelper;
 
-  constructor() {}
+  public mongoClient: MongoClient;
 
+  constructor() {
+    this.mongoClient = new MongoClient(mongoURL, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      },
+    });
+  }
+
+  //TODO implement sorting!!
   public static getInstance(): DBHelper {
     if (!DBHelper.instance) {
       DBHelper.instance = new DBHelper();
     }
     return DBHelper.instance;
+  }
+
+  async getMatchArchive({
+    id = "",
+    queue = 0,
+    mode = "",
+    type = "",
+    offset = 0,
+    limit = 25,
+  }): Promise<MatchArchiveDB[]> {
+    try {
+      await this.mongoClient.connect();
+      logger.info("Getting MatchArchive with MongoDB");
+      let filter: any = {};
+      if (id) {
+        filter["metadata.matchId"] = id;
+      }
+      if (queue) {
+        filter["info.queueId"] = queue;
+      }
+      if (mode) {
+        filter["info.gameMode"] = mode;
+      }
+      if (type) {
+        filter["info.gameType"] = type;
+      }
+
+      const results = await this.mongoClient
+        .db("cnap")
+        .collection<MatchArchiveDB>("match_archive")
+        .find(filter)
+        .skip(offset)
+        .limit(limit)
+        .toArray();
+      return results;
+    } finally {
+      await this.mongoClient.close();
+    }
+  }
+
+  async getMatchesV5({ puuid = "", queue = 0, mode = "", type = "", offset = 0, limit = 25 }): Promise<MatchV5DB[]> {
+    try {
+      await this.mongoClient.connect();
+      logger.info("Getting MatchesV5 with MongoDB");
+      let filter: any = {};
+      if (puuid) {
+        filter["data_participant.puuid"] = puuid;
+      }
+      if (queue) {
+        filter["data_match.queueId"] = queue;
+      }
+      if (mode) {
+        filter["data_match.gameMode"] = mode;
+      }
+      if (type) {
+        filter["data_match.gameType"] = type;
+      }
+
+      const results = await this.mongoClient
+        .db("cnap")
+        .collection<MatchV5DB>("match_v5")
+        .find(filter)
+        .skip(offset)
+        .limit(limit)
+        .toArray();
+      return results;
+    } finally {
+      await this.mongoClient.close();
+    }
+  }
+
+  async getSummoners({ name = "", puuid = "", skip = 0, limit = 25 }): Promise<SummonerDB[]> {
+    try {
+      await this.mongoClient.connect();
+      logger.info("Getting Summoners with MongoDB");
+      let filter: any = {};
+      if (name) {
+        filter["name"] = name;
+      }
+      if (puuid) {
+        filter["puuid"] = puuid;
+      }
+
+      const results = await this.mongoClient
+        .db("cnap")
+        .collection<SummonerDB>("summoner")
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+      return results;
+    } finally {
+      await this.mongoClient.close();
+    }
   }
 
   /**

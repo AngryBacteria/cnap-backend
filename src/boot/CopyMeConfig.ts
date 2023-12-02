@@ -24,6 +24,9 @@ export const pg = new Pool({
   max: 20,
 });
 
+//mongodb
+export const mongoURL = "connectionStringHere";
+
 //redis
 export const redisPassword = "CHANGE_ME";
 export const cache = createRedis({
