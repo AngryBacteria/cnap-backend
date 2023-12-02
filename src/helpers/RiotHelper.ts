@@ -33,15 +33,8 @@ export default class RiotHelper {
    * Function to fetch a specific match from the RiotAPI. If applicable it uses
    * the Redis Cache. Uses Rate Limiting and Axios Retries
    */
-  async getMatch(matchId: string, useCache = true): Promise<MatchDTO> {
+  async getMatch(matchId: string): Promise<MatchDTO> {
     try {
-      if (useCache) {
-        let match = await this.dbHelper.getObjectFromRedis(matchId);
-        if (match) {
-          logger.info(`Match [${matchId}] found in cache`);
-          return match;
-        }
-      }
       logger.info(`Fetching Match with Riot-API [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
@@ -77,16 +70,8 @@ export default class RiotHelper {
    * Function to fetch a TimeLine for a specific match from the RiotAPI. If applicable it uses
    * the Redis Cache. Uses Rate Limiting and Axios Retries
    */
-  async getTimeLine(matchId: string, useCache = true): Promise<TimelineDTO> {
+  async getTimeLine(matchId: string): Promise<TimelineDTO> {
     try {
-      if (useCache) {
-        let timeline = await this.dbHelper.getObjectFromRedis("timeline_" + matchId);
-        if (timeline) {
-          logger.info(`Timeline [${matchId}] found in cache`);
-          return timeline;
-        }
-      }
-
       logger.info(`Fetching Timeline with Riot-API for [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);

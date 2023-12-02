@@ -31,11 +31,15 @@ router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
   const limit = 25;
   let page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
   const offset = (page - 1) * limit;
-  const { data, error } = await dbHelper.executeQuery(`SELECT * FROM summoners LIMIT ${limit} OFFSET ${offset}`);
-  if (!error) {
-    res.send(data.rows);
+
+  const results = await dbHelper.getSummoners({
+    limit: limit,
+    skip: offset
+  })
+  if(results.length >= 1) {
+    res.send(results);
   } else {
-    res.status(500).send(error);
+    res.send(404);
   }
 });
 
@@ -59,16 +63,14 @@ router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
 router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.Response) => {
   const puuid = req.params.puuid;
 
-  //postgres
-  const query = {
-    name: "fetch_summoner_by_puuid",
-    text: "SELECT * FROM summoners WHERE puuid = $1",
-    values: [puuid],
-  };
-  const { data } = await dbHelper.executeQuery(query);
-  if (data?.rows.length) {
-    res.send(data.rows[0].data);
-    logger.info(`Api-Request for Summoner [${puuid}] with Method: POSTGRES`);
+  //mongodb
+  const results = await dbHelper.getSummoners({
+    puuid: puuid
+  })
+
+  if(results.length >= 1) {
+    res.send(results[0]);
+    logger.info(`Api-Request for Summoner [${puuid}] with Method: MongoDB`);
     return;
   }
 
@@ -102,16 +104,14 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
 router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Response) => {
   const name = req.params.name;
 
-  //postgres
-  const query = {
-    name: "fetch_summoner_by_name",
-    text: "SELECT * FROM summoners WHERE data ->> 'name' = $1",
-    values: [name],
-  };
-  const { data } = await dbHelper.executeQuery(query);
-  if (data?.rows.length) {
-    res.send(data.rows[0].data);
-    logger.info(`Api-Request for Summoner [${name}] with Method: POSTGRES`);
+  //mongodb
+  const results = await dbHelper.getSummoners({
+    name: name
+  })
+
+  if(results.length >= 1) {
+    res.send(results[0]);
+    logger.info(`Api-Request for Summoner [${name}] with Method: MongoDB`);
     return;
   }
 
@@ -123,43 +123,6 @@ router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Re
     return;
   }
   res.status(404).send(`No summoner found with name [${name}]`);
-});
-
-/**
- * @swagger
- * /api/v1/summoner/puuid/{puuid}:
- *   get:
- *     description: Endpoint to get a summary of a summoner by its puuid
- *     tags:
- *      - summoner
- *     responses:
- *       200:
- *         description: Summoner summary Object
- *     parameters:
- *       - name: puuid
- *         in: path
- *         required: true
- *         type: string
- *         description: puuid of a summoner
- */
-router.get(baseUrl + "/summary/:puuid", async (req: Express.Request, res: Express.Response) => {
-  const puuid = req.params.puuid;
-
-  //postgres
-  const query = {
-    name: "fetch_summonerSummary_by_puuid",
-    text: "select * from summoner_summary_v1('$1')",
-    values: [puuid],
-  };
-
-  const { data } = await dbHelper.executeQuery(query);
-  if (data?.rows.length) {
-    res.send(data.rows[0].data);
-    logger.info(`Api-Request for SummonerSummary [${puuid}] with Method: POSTGRES`);
-    return;
-  }
-
-  res.status(404).send(`No SummonerSummary found with puuid [${puuid}]`);
 });
 
 export default router;

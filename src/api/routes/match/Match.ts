@@ -54,7 +54,11 @@ router.get(baseUrl + "/archive", async (req: Express.Request, res: Express.Respo
     type: type as string,
   });
   logger.info(`Api-Request for Archive-Matches with Method: MongoDB`);
-  return res.send(result);
+  if (result.length >= 1) {
+    return res.send(result);
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 /**

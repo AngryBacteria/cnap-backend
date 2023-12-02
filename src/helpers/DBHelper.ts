@@ -36,7 +36,6 @@ export default class DBHelper {
   }): Promise<MatchArchiveDB[]> {
     try {
       await this.mongoClient.connect();
-      logger.info("Getting MatchArchive with MongoDB");
       let filter: any = {};
       if (id) {
         filter["metadata.matchId"] = id;
@@ -58,7 +57,11 @@ export default class DBHelper {
         .skip(offset)
         .limit(limit)
         .toArray();
+      logger.info("Getting MatchArchive with MongoDB");
       return results;
+    } catch(error) {
+      logger.error("Error getting MatchArchive with MongoDB: ", error);
+      return []
     } finally {
       await this.mongoClient.close();
     }
@@ -67,7 +70,6 @@ export default class DBHelper {
   async getMatchesV5({ puuid = "", queue = 0, mode = "", type = "", offset = 0, limit = 25 }): Promise<MatchV5DB[]> {
     try {
       await this.mongoClient.connect();
-      logger.info("Getting MatchesV5 with MongoDB");
       let filter: any = {};
       if (puuid) {
         filter["data_participant.puuid"] = puuid;
@@ -89,7 +91,11 @@ export default class DBHelper {
         .skip(offset)
         .limit(limit)
         .toArray();
+      logger.info("Getting MatchesV5 with MongoDB");
       return results;
+    } catch(error) {
+      logger.error("Error getting MatchesV5 with MongoDB", error);
+      return []
     } finally {
       await this.mongoClient.close();
     }
@@ -98,7 +104,6 @@ export default class DBHelper {
   async getSummoners({ name = "", puuid = "", skip = 0, limit = 25 }): Promise<SummonerDB[]> {
     try {
       await this.mongoClient.connect();
-      logger.info("Getting Summoners with MongoDB");
       let filter: any = {};
       if (name) {
         filter["name"] = name;
@@ -114,7 +119,11 @@ export default class DBHelper {
         .skip(skip)
         .limit(limit)
         .toArray();
+      logger.info("Getting Summoners with MongoDB");
       return results;
+    } catch(error) {
+      logger.error("Error getting Summoners with MongoDB");
+      return []
     } finally {
       await this.mongoClient.close();
     }

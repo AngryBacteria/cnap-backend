@@ -12,8 +12,8 @@ const client = new MongoClient(mongoURL, {
 });
 async function run() {
   try {
-    //await migrateArchive()
-    //await migrateMatches()
+    await migrateArchive()
+    await migrateMatches()
     await migrateSummoners();
   } finally {
   }
