@@ -1,6 +1,5 @@
 import express from "express";
 import Express from "express";
-import { pg } from "../../../boot/config";
 
 const router = express.Router();
 
@@ -9,13 +8,6 @@ router.get("/hello", (req: Express.Request, res: Express.Response) => {
     console.log("there is an id: ", req.query.id);
   }
   res.send("Hello World!");
-});
-
-router.get("/now", async (req: Express.Request, res: Express.Response) => {
-  const client = await pg.connect();
-  const { rows } = await client.query("SELECT NOW()");
-  res.send(rows);
-  client.release(true);
 });
 
 export default router;
