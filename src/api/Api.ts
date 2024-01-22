@@ -9,7 +9,7 @@ import swaggerUi from "swagger-ui-express";
 import cors from "cors";
 
 //Config
-const port = 3000;
+const port = 3469;
 const baseUrl = "/api/v1";
 
 //cors

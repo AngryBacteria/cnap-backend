@@ -8,26 +8,28 @@ import ON_DEATH from "death";
 const { combine, timestamp, label, printf } = format;
 
 //lolapi
-export const riotApiKey = "CHANGE_ME";
+export const riotApiKey = process.env.RIOT_KEY || "CHANGE";
 
 //express
 export const expressInstance = express();
-export const pathToEndpoints = "CHANGE_ME";
+export const pathToEndpoints = "src/api/routes/**/*.ts";
 
 //postgres
 export const pg = new Pool({
-  user: "CHANGE_ME",
-  password: "CHANGE_ME",
-  host: "CHANGE_ME",
-  database: "CHANGE_ME",
-  port: -1,
+  user: process.env.POSTGRES_USER || "postgres",
+  password: process.env.PASSWORD || "CHANGE",
+  host: process.env.HOST || "CHANGE",
+  database: process.env.POSTGRES_DB || "CHANGE",
+  port: 5432,
   max: 20,
 });
 
 //redis
-export const redisPassword = "CHANGE_ME";
+const redisHost = process.env.REDIS_HOST || "CHANGE";
+const redisPort = process.env.REDIS_PORT || "6379";
+const redisPassword = process.env.REDIS_PASSWORD || "CHANGE";
 export const cache = createRedis({
-  url: `redis://:${redisPassword}@localhost:6379`,
+  url: `redis://:${redisPassword}@${redisHost}:${redisPort}`,
 });
 
 cache
@@ -59,11 +61,8 @@ const myFormat = printf(({ level, message, label, timestamp }) => {
 export const logger = createLogger({
   format: combine(label({ label: "CAP Backend Service" }), timestamp(), myFormat),
   transports: [
-    new winston.transports.File({
+    new winston.transports.Console({
       level: "debug",
-      filename: "combined.log",
-      maxsize: 500 * 1024 * 1024, // 100MB
-      maxFiles: 2,
     }),
   ],
 });

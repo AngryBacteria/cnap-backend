@@ -1,0 +1,8 @@
+/src/boot/config.ts
+/node_modules/
+/data/
+/src/boot/firebase.ts
+/.idea
+/api.log
+/combined.log
+/src/boot/serviceAccount.json

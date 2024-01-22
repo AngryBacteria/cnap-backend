@@ -90,7 +90,7 @@ router.get(baseUrl + "/archive", async (req: Express.Request, res: Express.Respo
 router.get(baseUrl + "/archive/id/:id", async (req: Express.Request, res: Express.Response) => {
   //redis
   const match_id = req.params.id;
-  let match = await dbHelper.getObjectFromRedis(match_id);
+  const match = await dbHelper.getObjectFromRedis(match_id);
   if (match) {
     res.send(match);
     logger.info(`Api-Request for Match [${match_id}] with Method: REDIS`);
@@ -221,9 +221,9 @@ router.get(baseUrl + "/participant/puuid/:puuid", async (req: Express.Request, r
 router.get(baseUrl + "/participant", async (req: Express.Request, res: Express.Response) => {
   //Query params
   const { limit, offset } = prepareQuery(req);
-  let queue = req.query.queue;
-  let mode = req.query.mode;
-  let type = req.query.type;
+  const queue = req.query.queue;
+  const mode = req.query.mode;
+  const type = req.query.type;
 
   //Query
   let query = "SELECT * FROM match_v5 WHERE 1=1";
@@ -248,10 +248,10 @@ router.get(baseUrl + "/participant", async (req: Express.Request, res: Express.R
 });
 
 function prepareQuery(req: Express.Request) {
-  let queue = req.query.queue;
-  let mode = req.query.mode;
-  let type = req.query.type;
-  let page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
+  const queue = req.query.queue;
+  const mode = req.query.mode;
+  const type = req.query.type;
+  const page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
   const limit = 25;
   const offset = (page - 1) * limit;
   return { limit, offset, queue, mode, type };

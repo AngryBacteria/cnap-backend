@@ -15,10 +15,10 @@ export async function asyncWrap(promise: Promise<any>): Promise<{ data: any; err
 }
 
 export function prepareQuery(req: Express.Request) {
-  let queue = req.query.queue;
-  let mode = req.query.mode;
-  let type = req.query.type;
-  let page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
+  const queue = req.query.queue;
+  const mode = req.query.mode;
+  const type = req.query.type;
+  const page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
   const limit = 25;
   const offset = (page - 1) * limit;
   return { limit, offset, queue, mode, type };

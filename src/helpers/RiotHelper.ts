@@ -36,7 +36,7 @@ export default class RiotHelper {
   async getMatch(matchId: string, useCache = true): Promise<MatchDTO> {
     try {
       if (useCache) {
-        let match = await this.dbHelper.getObjectFromRedis(matchId);
+        const match = await this.dbHelper.getObjectFromRedis(matchId);
         if (match) {
           logger.info(`Match [${matchId}] found in cache`);
           return match;
@@ -45,9 +45,9 @@ export default class RiotHelper {
       logger.info(`Fetching Match with Riot-API [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
-      let axiosResponse = await axios.get(url);
-      let match = axiosResponse.data;
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
+      const axiosResponse = await axios.get(url);
+      const match = axiosResponse.data;
       await this.dbHelper.setObjectInRedis(matchId, match);
       return match;
     } catch (e) {
@@ -64,8 +64,8 @@ export default class RiotHelper {
       logger.info(`Fetching Matchlist with Riot-API for [${summoner.data.name}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.data.puuid}/ids?start=${offset}&count=${count}&api_key=${riotApiKey}`;
-      let axiosResponse = await axios.get(url);
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.data.puuid}/ids?start=${offset}&count=${count}&api_key=${riotApiKey}`;
+      const axiosResponse = await axios.get(url);
       return axiosResponse.data;
     } catch (e: any) {
       logger.error(`Request for summoner [${summoner.data.name}] failed with error: ${e}`);
@@ -80,7 +80,7 @@ export default class RiotHelper {
   async getTimeLine(matchId: string, useCache = true): Promise<TimelineDTO> {
     try {
       if (useCache) {
-        let timeline = await this.dbHelper.getObjectFromRedis("timeline_" + matchId);
+        const timeline = await this.dbHelper.getObjectFromRedis("timeline_" + matchId);
         if (timeline) {
           logger.info(`Timeline [${matchId}] found in cache`);
           return timeline;
@@ -90,8 +90,8 @@ export default class RiotHelper {
       logger.info(`Fetching Timeline with Riot-API for [${matchId}]`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${riotApiKey}`;
-      let axiosResponse = await axios.get(url);
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${riotApiKey}`;
+      const axiosResponse = await axios.get(url);
       await this.dbHelper.setObjectInRedis("timeline_" + matchId, axiosResponse.data, 60 * 60);
       return axiosResponse.data;
     } catch (e: any) {
@@ -108,7 +108,7 @@ export default class RiotHelper {
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let axiosResponse = await axios.get(url);
+      const axiosResponse = await axios.get(url);
       return axiosResponse.data;
     } catch (e) {
       throw new Error(`Summoner with NAME [${name}] not found: ${e}`);
@@ -124,7 +124,7 @@ export default class RiotHelper {
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let axiosResponse = await axios.get(url);
+      const axiosResponse = await axios.get(url);
       return axiosResponse.data;
     } catch (e) {
       throw new Error(`Summoner with PUUID [${puuid}] not found: ${e}`);

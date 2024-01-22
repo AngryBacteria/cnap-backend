@@ -3,7 +3,6 @@ import axios from "axios";
 import axiosRetry from "axios-retry";
 import { Info, MatchDTO, Participant } from "../../interfaces/MatchInterfaces";
 import { SummonerDB } from "../../interfaces/CustomInterfaces";
-import differenceBy from "lodash/differenceBy";
 import pgPromise from "pg-promise";
 import DBHelper from "../../helpers/DBHelper";
 import RiotHelper from "../../helpers/RiotHelper";
@@ -35,14 +34,14 @@ export default class MainTask {
     const matchIds = await this.riotHelper.getMatchList(summoner, count, offset);
     for (const matchId of matchIds) {
       try {
-        let match = await this.riotHelper.getMatch(matchId);
+        const match = await this.riotHelper.getMatch(matchId);
         archiveData.push({
           match_id: match.metadata.matchId,
           data: JSON.parse(JSON.stringify(match)),
         });
 
-        let participantDto = this.getParticipantFromMatch(summoner.data.puuid, match);
-        let match_id_puuid = match.metadata.matchId + "__" + summoner.data.puuid;
+        const participantDto = this.getParticipantFromMatch(summoner.data.puuid, match);
+        const match_id_puuid = match.metadata.matchId + "__" + summoner.data.puuid;
         matchData.push({
           match_id: match.metadata.matchId,
           match_id_puuid: match_id_puuid,
@@ -159,7 +158,7 @@ export default class MainTask {
    * Inserts a summoner into the database. First it searches the summoner in the riot api
    */
   async insertSummoner(name: string) {
-    let summoner = await this.riotHelper.getSummonerByName(name);
+    const summoner = await this.riotHelper.getSummonerByName(name);
     const query = {
       text: "INSERT INTO summoners(data, puuid) VALUES($1, $2)",
       values: [summoner, summoner.puuid],
@@ -194,22 +193,6 @@ export default class MainTask {
     const optionalInfoDto: Partial<Info> = match.info;
     delete optionalInfoDto.participants;
     return { ...optionalInfoDto, ...match.metadata };
-  }
-
-  /**
-   * Searches differences in the database between the match_v5 and match_archive tables.
-   * Returns a list of objects that are not in the respective other database
-   * Only used to troubleshoot / debug
-   */
-  async getDifferencesInDB() {
-    const { data } = await this.dbHelper.executeQuery("select match_id from match_v5");
-    const { data: data2 } = await this.dbHelper.executeQuery("select match_id from match_archive");
-    const diff1 = differenceBy(data.rows, data2.rows, "match_id");
-
-    // @ts-ignore
-    const diff2 = differenceBy(data2.rows, data.rows, "match_id");
-    console.log(diff1);
-    console.log(diff2);
   }
 
   /**

@@ -29,7 +29,7 @@ const riotHelper = RiotHelper.getInstance();
  */
 router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
   const limit = 25;
-  let page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
+  const page = isNaN(Number(req.query.page)) ? 1 : Number(req.query.page);
   const offset = (page - 1) * limit;
   const { data, error } = await dbHelper.executeQuery(`SELECT * FROM summoners LIMIT ${limit} OFFSET ${offset}`);
   if (!error) {
