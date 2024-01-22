@@ -22,34 +22,6 @@ cnaptask_paths_location: "{{ server_appdata_path }}/{{ cnaptask_paths_folder }}"
 cnaptask_paths_folders_list:
   - "{{ cnaptask_paths_location }}"
 
-################################
-# Web
-################################
-
-cnaptask_web_subdomain: "{{ cnaptask_name }}"
-cnaptask_web_domain: "{{ user.domain }}"
-cnaptask_web_port: "3469"
-cnaptask_web_url: "{{ 'https://' + cnaptask_web_subdomain + '.' + cnaptask_web_domain
-                     if (reverse_proxy_is_enabled)
-                     else 'http://localhost:' + cnaptask_web_port }}"
-
-################################
-# DNS
-################################
-
-cnaptask_dns_record: "{{ cnaptask_web_subdomain }}"
-cnaptask_dns_zone: "{{ cnaptask_web_domain }}"
-cnaptask_dns_proxy: "{{ dns.proxied }}"
-
-################################
-# Traefik
-################################
-
-cnaptask_traefik_middleware: "{{ traefik_default_middleware + ',' + cnaptask_traefik_sso_middleware
-                                if (cnaptask_traefik_sso_middleware | length > 0)
-                                else traefik_default_middleware }}"
-cnaptask_traefik_certresolver: "{{ traefik_default_certresolver }}"
-cnaptask_traefik_enabled: true
 
 ################################
 # Docker
