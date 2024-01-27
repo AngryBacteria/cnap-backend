@@ -23,6 +23,16 @@ export const pg = new Pool({
   port: 5432,
   max: 20,
 });
+async function checkPostgres() {
+  try {
+    const client = await pg.connect();
+    client.release(true);
+    console.log("Connected to postgres")
+  } catch (error) {
+    console.log("Error connecting to postgres", error);
+  }
+}
+checkPostgres();
 
 //redis
 const redisHost = process.env.REDIS_HOST || "CHANGE";
@@ -35,7 +45,7 @@ export const cache = createRedis({
 cache
   .connect()
   .then(() => console.log("connected to cache"))
-  .catch(() => console.log("redis connection error"));
+  .catch((error) => console.log("redis connection error: ", error));
 
 ON_DEATH(async () => {
   await cache.quit();

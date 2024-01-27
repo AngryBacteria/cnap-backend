@@ -1,4 +1,5 @@
 import Express from "express";
+import { logger } from "../boot/config";
 
 /**
  * Wrapper function for any sort of async promise. Works by executing the promise
@@ -10,6 +11,7 @@ export async function asyncWrap(promise: Promise<any>): Promise<{ data: any; err
     const data = await promise;
     return { data: data, error: null };
   } catch (error) {
+    logger.error("error in asyncwrap: ", error);
     return { data: null, error: error };
   }
 }
