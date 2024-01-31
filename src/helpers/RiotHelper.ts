@@ -1,17 +1,12 @@
-import { MatchDTO } from "../interfaces/MatchInterfaces";
-import { SummonerDB, SummonerData } from "../interfaces/CustomInterfaces";
 import { backgroundLimiter1, backgroundLimiter2, logger, riotApiKey } from "../boot/config";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import DBHelper from "./DBHelper";
-import { TimelineDTO } from "../interfaces/TimelineInterfaces";
+import { MatchV5DTO, SummonerDTO } from "../interfaces/CustomInterfaces";
 
 export default class RiotHelper {
   private static instance: RiotHelper;
-  dbHelper: DBHelper;
 
   constructor() {
-    this.dbHelper = DBHelper.getInstance();
     axiosRetry(axios, {
       retries: 3, // number of retries
       retryDelay: (retryCount) => {
@@ -33,18 +28,17 @@ export default class RiotHelper {
    * Function to fetch a specific match from the RiotAPI. If applicable it uses
    * the Redis Cache. Uses Rate Limiting and Axios Retries
    */
-  async getMatch(matchId: string): Promise<MatchDTO> {
+  async getMatchRiot(matchId: string): Promise<MatchV5DTO> {
     try {
-      logger.info(`Fetching Match with Riot-API [${matchId}]`);
+      logger.info(`Fetching Match [${matchId}] with Riot-API`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
-      let axiosResponse = await axios.get(url);
-      let match = axiosResponse.data;
-      await this.dbHelper.setObjectInRedis(matchId, match);
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
+      const axiosResponse = await axios.get(url);
+      const match = axiosResponse.data;
       return match;
     } catch (e) {
-      throw new Error(`Error while getting the data for match [${matchId}] because: + ${e}`);
+      throw new Error(`Error while fetching Match [${matchId}] with Riot-API: ${e}`);
     }
   }
 
@@ -52,67 +46,49 @@ export default class RiotHelper {
    * Function to fetch a MatchList for a specific summoner from the RiotAPI.
    * Uses Rate Limiting and Axios Retries
    */
-  async getMatchList(summoner: SummonerDB, count = 100, offset = 0): Promise<string[]> {
+  async getMatchListRiot(summoner: SummonerDTO, count = 100, offset = 0): Promise<string[]> {
     try {
-      logger.info(`Fetching Matchlist with Riot-API for [${summoner.data.name}]`);
+      logger.info(`Fetching Matchlist [${summoner.name}] with Riot-API`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.data.puuid}/ids?start=${offset}&count=${count}&api_key=${riotApiKey}`;
-      let axiosResponse = await axios.get(url);
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.puuid}/ids?start=${offset}&count=${count}&api_key=${riotApiKey}`;
+      const axiosResponse = await axios.get(url);
       return axiosResponse.data;
-    } catch (e: any) {
-      logger.error(`Request for summoner [${summoner.data.name}] failed with error: ${e}`);
+    } catch (e) {
+      logger.error(`Error while fetching Matchlist of Summoner [${summoner.name}] with Riot-API: ${e}`);
     }
     return [];
   }
 
   /**
-   * Function to fetch a TimeLine for a specific match from the RiotAPI. If applicable it uses
-   * the Redis Cache. Uses Rate Limiting and Axios Retries
-   */
-  async getTimeLine(matchId: string): Promise<TimelineDTO> {
-    try {
-      logger.info(`Fetching Timeline with Riot-API for [${matchId}]`);
-      await backgroundLimiter1.removeTokens(1);
-      await backgroundLimiter2.removeTokens(1);
-      let url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline?api_key=${riotApiKey}`;
-      let axiosResponse = await axios.get(url);
-      await this.dbHelper.setObjectInRedis("timeline_" + matchId, axiosResponse.data, 60 * 60);
-      return axiosResponse.data;
-    } catch (e: any) {
-      throw new Error(`Request for TimeLine [${matchId}] failed with error: ${e}`);
-    }
-  }
-
-  /**
    * Fetches a Summoner by name from the RiotAPI
    */
-  async getSummonerByName(name: string): Promise<SummonerData> {
+  async getSummonerByNameRiot(name: string): Promise<SummonerDTO> {
     try {
-      logger.info(`Fetching Summoner with Riot-API by name [${name}]`);
+      logger.info(`Fetching Summoner [${name}] with Riot-API`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let axiosResponse = await axios.get(url);
+      const axiosResponse = await axios.get(url);
       return axiosResponse.data;
     } catch (e) {
-      throw new Error(`Summoner with NAME [${name}] not found: ${e}`);
+      throw new Error(`Error while fetching Summoner [${name}] with Riot-API: ${e}`);
     }
   }
 
   /**
    * Fetches a Summoner by PUUID from the RiotAPI
    */
-  async getSummonerByPuuid(puuid: string): Promise<SummonerData> {
+  async getSummonerByPuuidRiot(puuid: string): Promise<SummonerDTO> {
     try {
-      logger.info(`Fetching Summoner with Riot-API by puuid [${puuid}]`);
+      logger.info(`Fetching Summoner [${puuid}] with Riot-API`);
       const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      let axiosResponse = await axios.get(url);
+      const axiosResponse = await axios.get(url);
       return axiosResponse.data;
     } catch (e) {
-      throw new Error(`Summoner with PUUID [${puuid}] not found: ${e}`);
+      throw new Error(`Error while fetching Summoner [${puuid}] with Riot-API: ${e}`);
     }
   }
 }

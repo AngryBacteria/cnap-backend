@@ -1,13 +1,10 @@
 import { logger } from "../../boot/config";
 import axios from "axios";
 import axiosRetry from "axios-retry";
-import { Info, MatchDTO, Participant } from "../../interfaces/MatchInterfaces";
-import { SummonerDB } from "../../interfaces/CustomInterfaces";
-import pgPromise from "pg-promise";
 import DBHelper from "../../helpers/DBHelper";
 import RiotHelper from "../../helpers/RiotHelper";
+import { MatchV5DTO, SummonerDTO } from "../../interfaces/CustomInterfaces";
 
-//TODO: fix cache behaviour
 export default class MainTask {
   dbHelper: DBHelper;
   riotHelper: RiotHelper;
@@ -16,7 +13,7 @@ export default class MainTask {
     this.dbHelper = DBHelper.getInstance();
     this.riotHelper = RiotHelper.getInstance();
     axiosRetry(axios, {
-      retries: 3, // number of retries
+      retries: 4, // number of retries
       retryDelay: (retryCount) => {
         logger.warn(`retry attempt: ${retryCount}`);
         return retryCount * 2000; // time interval between retries
@@ -27,109 +24,45 @@ export default class MainTask {
   //
   //DB Stuff
   //
-  /**
-   * Takes in a summoner, an array for the matchData and one for the archiveData.
-   * It fills both arrays with the relevant data from the api response
-   */
-  async prepareMatches(summoner: SummonerDB, matchData: any[], archiveData: any[], count = 100, offset = 0) {
-    const matchIds = await this.riotHelper.getMatchList(summoner, count, offset);
-    for (const matchId of matchIds) {
-      try {
-        let match = await this.riotHelper.getMatch(matchId);
-        // Make a copy of the data object
-        archiveData.push({
-          match_id: match.metadata.matchId,
-          data: JSON.parse(JSON.stringify(match)),
-        });
-
-        let participantDto = this.getParticipantFromMatch(summoner.data.puuid, match);
-        let match_id_puuid = match.metadata.matchId + "__" + summoner.data.puuid;
-        matchData.push({
-          match_id: match.metadata.matchId,
-          match_id_puuid: match_id_puuid,
-          summoner_id: summoner.id,
-          puuid: summoner.data.puuid,
-          data_participant: participantDto,
-          data_match: this.createGameInfo(match),
-        });
-      } catch (e: any) {
-        logger.error(`Request for summoner [${summoner.data.name}] failed with error, will continue the loop: ${e}`);
-      }
-    }
+  async connectToDb() {
+    await this.dbHelper.connect();
   }
-
   /**
-   * For all summoners it inserts all new games into the database.
+   * For all of a single summoner it inserts all new games into the database.
    * If the match already exists (recognized by match_id_puuid or match_id) it does not insert it
+   * @param puuid puuid of the summoner. Leave empty to update all summoners
    * @param offset where to start
    * @param count amount of matches to fetch
    */
-  async updateMatchData(offset: number = 0, count: number = 6) {
-    const { data, error } = await this.dbHelper.executeQuery("select * from summoners");
-    if (error) {
-      logger.error(`Error occurred while getting summoners: ${error}`);
+  async updateMatchData(puuid: string = "", offset: number = 0, count: number = 69) {
+    const summonerQuery = puuid ? { puuid: puuid } : {};
+    const existingSummoners = await this.dbHelper.getSummoners(summonerQuery);
+    if (!existingSummoners || existingSummoners.length === 0) {
+      const errorMessage = puuid
+        ? `No Summoner [${puuid}] data available to update match history. Stopping the loop`
+        : "No Summoner data available to update match history. Stopping the loop";
+      logger.error(errorMessage);
+      return;
     }
-    if (data) {
-      for (const summonerDB of data.rows as SummonerDB[]) {
+    if (existingSummoners) {
+      for (const summoner of existingSummoners) {
         try {
-          const matchData: any[] = [];
-          const archiveData: any[] = [];
-          await this.prepareMatches(summonerDB, matchData, archiveData, count, offset);
-
-          const pgp = pgPromise({ pgFormatting: false, capSQL: true });
-          const columsV5 = new pgp.helpers.ColumnSet(
-            ["match_id", "match_id_puuid", "summoner_id", "puuid", "data_participant", "data_match"],
-            { table: "match_v5" }
-          );
-          const queryV5 = pgp.helpers.insert(matchData, columsV5) + " ON CONFLICT (match_id_puuid) DO NOTHING";
-
-          const columsArchive = new pgp.helpers.ColumnSet(["match_id", "data"], { table: "match_archive" });
-          const queryArchive = pgp.helpers.insert(archiveData, columsArchive) + " ON CONFLICT (match_id) DO NOTHING";
-
-          await this.dbHelper.executeQuery(queryV5);
-          await this.dbHelper.executeQuery(queryArchive);
-        } catch (e) {
-          logger.error(e);
-        }
-      }
-    }
-  }
-
-  /**
-   * For a specific summoner it inserts all new games into the database.
-   * If the match already exists (recognized by match_id_puuid or match_id) it does not insert it
-   * @param offset where to start
-   * @param count amount of matches to fetch
-   */
-  async updateMatchDataForSummoner(puuid: string, offset: number = 0, count: number = 6) {
-    const query = {
-      text: "SELECT * FROM summoners WHERE puuid = $1",
-      values: [puuid],
-    };
-    const { data, error } = await this.dbHelper.executeQuery(query);
-    if (error) {
-      logger.error(`Error occured while getting summoners: ${error}`);
-    }
-
-    if (data) {
-      for (const summonerDB of data.rows as SummonerDB[]) {
-        try {
-          const matchData: any[] = [];
-          const archiveData: any[] = [];
-          await this.prepareMatches(summonerDB, matchData, archiveData, count, offset);
-
-          const pgp = pgPromise({ pgFormatting: false, capSQL: true });
-          const columsV5 = new pgp.helpers.ColumnSet(
-            ["match_id", "match_id_puuid", "summoner_id", "puuid", "data_participant", "data_match"],
-            { table: "match_v5" }
-          );
-          const queryV5 = pgp.helpers.insert(matchData, columsV5) + " ON CONFLICT (match_id_puuid) DO NOTHING";
-
-          const columsArchive = new pgp.helpers.ColumnSet(["match_id", "data"], { table: "match_archive" });
-          const queryArchive = pgp.helpers.insert(archiveData, columsArchive) + " ON CONFLICT (match_id) DO NOTHING";
-
-          await this.dbHelper.executeQuery(queryV5);
-          await this.dbHelper.executeQuery(queryArchive);
+          const riotMatchIds = await this.riotHelper.getMatchListRiot(summoner, count, offset);
+          const filteredIds = await this.dbHelper.getNonExistingMatchIds(riotMatchIds);
+          if (!filteredIds || filteredIds.length === 0) {
+            logger.info(`No new matches for summoner [${summoner.name}]`);
+          } else {
+            const matchData: MatchV5DTO[] = [];
+            for (const matchId of filteredIds) {
+              try {
+                const match = await this.riotHelper.getMatchRiot(matchId);
+                matchData.push(match);
+              } catch (e) {
+                logger.error(`Request for summoner [${summoner.name}] failed with error, will continue the loop: ${e}`);
+              }
+            }
+            await this.dbHelper.updateMatches(matchData);
+          }
         } catch (e) {
           logger.error(e);
         }
@@ -142,17 +75,18 @@ export default class MainTask {
    * and replacing the existing db data
    */
   async updateSummonerData() {
-    const { data } = await this.dbHelper.executeQuery("select * from summoners");
-
-    if (data) {
-      for (const summonerDB of data.rows) {
-        const summonerRiot = await this.riotHelper.getSummonerByPuuid(summonerDB.puuid);
-        const query = {
-          text: "UPDATE summoners SET data = $1 WHERE puuid = $2",
-          values: [summonerRiot, summonerDB.data.puuid],
-        };
-        this.dbHelper.executeQuery(query);
+    const existingSummoners = await this.dbHelper.getSummoners({});
+    if (existingSummoners) {
+      const newSummoners: SummonerDTO[] = []
+      for (const summoner of existingSummoners) {
+        try {
+          const summonerRiot = await this.riotHelper.getSummonerByPuuidRiot(summoner.puuid);
+          newSummoners.push(summonerRiot);
+        } catch (error) {
+          logger.error(`No Summoner [${summoner.name}] data available to update to insert. Continuing the loop`);
+        }
       }
+      this.dbHelper.updateSummoners(newSummoners);
     }
   }
 
@@ -160,14 +94,11 @@ export default class MainTask {
    * Inserts a summoner into the database. First it searches the summoner in the riot api
    */
   async insertSummoner(name: string) {
-    let summoner = await this.riotHelper.getSummonerByName(name);
-    const query = {
-      text: "INSERT INTO summoners(data, puuid) VALUES($1, $2)",
-      values: [summoner, summoner.puuid],
-    };
-    const { error } = await this.dbHelper.executeQuery(query);
-    if (error) {
-      logger.error(`Error from inserting Summoner into the DB ${error.details}`);
+    try {
+      const riotSummoner = await this.riotHelper.getSummonerByNameRiot(name);
+      this.dbHelper.updateSummoners([riotSummoner]);
+    } catch (error) {
+      logger.error(`No Summoner [${name}] data available to insert`);
     }
   }
 
@@ -175,46 +106,13 @@ export default class MainTask {
   //Helper Stuff
   //
   /**
-   * Extracts a specific participant from a match object
+   * Function to add all matches (max of 2000) of all summoners or a single summoner
+   * @param puuid puuid of the summoner. Leave empty to update all summoners
    */
-  getParticipantFromMatch(puuid: string, match: MatchDTO): Participant {
-    for (const participant of match.info.participants) {
-      if (participant.puuid === puuid) {
-        return participant;
-      }
-    }
-    throw new Error(`No summoner found in Match [${match.metadata.matchId}] with PUUID [${puuid}]`);
-  }
-
-  /**
-   * Takes a Match Object and extracts the relevant information.
-   * It removes the data for the individual participants
-   * @param match Match object
-   */
-  createGameInfo(match: MatchDTO) {
-    const optionalInfoDto: Partial<Info> = match.info;
-    delete optionalInfoDto.participants;
-    return { ...optionalInfoDto, ...match.metadata };
-  }
-
-  /**
-   * Function to fill the entire database with data for all summoners
-   */
-  async fillMatchData() {
+  async fillMatchData(puuid: string = "") {
     for (let i = 0; i < 2000; i = i + 95) {
       logger.info(`INSERTING WITH I = ${i}`);
-      await this.updateMatchData(i, 95);
-    }
-  }
-
-  /**
-   * Fills the database with the last 2000 (max amount from riot api) games for a specific summoner
-   * @param puuid PUUID (riot internal id) of the summoner
-   */
-  async fillMatchDataForSummoner(puuid: string) {
-    for (let i = 0; i < 2000; i = i + 95) {
-      logger.info(`INSERTING WITH I = ${i}`);
-      await this.updateMatchDataForSummoner(puuid, i, 95);
+      await this.updateMatchData(puuid, i, 95);
     }
   }
 
@@ -223,21 +121,17 @@ export default class MainTask {
    * @param intervalTime Time in milliseconds to wait for the next iteration
    */
   async intervalUpdate(iteration: number, intervalTime: number) {
-    logger.info(`DATA BEING UPDATED [${iteration}]: ${new Date().toUTCString()}`);
+    logger.info(`UPDATING MATCH DATA [${iteration}]: ${new Date().toUTCString()}`);
     iteration++;
+    // Update summoner data every 10 iterations
     if (iteration === 10) {
       logger.info(`UPDATING SUMMONER DATA: ${new Date().toUTCString()}`);
-      await task.updateSummonerData();
+      await this.updateSummonerData();
       iteration = 0;
       logger.info(`UPDATED SUMMONER DATA: ${new Date().toUTCString()}`);
     }
-    await this.updateMatchData(0, 10);
-    logger.info(`DATA UPDATED [${iteration}]: ${new Date().toUTCString()}`);
+    await this.updateMatchData("", 0, 50);
+    logger.info(`UPDATED MATCH DATA [${iteration}]: ${new Date().toUTCString()}`);
     setTimeout(() => this.intervalUpdate(iteration, intervalTime), intervalTime);
   }
 }
-
-const task = new MainTask();
-task.intervalUpdate(0, 1000 * 60 * 60 * 2).then(() => {
-  console.log("first iteration done");
-});

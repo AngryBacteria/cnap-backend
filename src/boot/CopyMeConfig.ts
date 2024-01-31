@@ -1,46 +1,21 @@
-import { createClient as createRedis } from "redis";
 import express from "express";
-import { Pool } from "pg";
 import { RateLimiter } from "limiter";
 import winston, { createLogger, format } from "winston";
+import path from "path";
 import ON_DEATH from "death";
-
-const { combine, timestamp, label, printf } = format;
+import DBHelper from "../helpers/DBHelper";
 
 //lolapi
-export const riotApiKey = "CHANGE_ME";
+export const riotApiKey = "RIOT-API-KEY-HERE";
 
 //express
 export const expressInstance = express();
-export const pathToEndpoints = "CHANGE_ME";
-
-//postgres
-export const pg = new Pool({
-  user: "CHANGE_ME",
-  password: "CHANGE_ME",
-  host: "CHANGE_ME",
-  database: "CHANGE_ME",
-  port: -1,
-  max: 20,
-});
+export const pathToEndpoints = path.join("src", "api", "routes", "**", "*.ts");
 
 //mongodb
-export const mongoURL = "connectionStringHere";
-
-//redis
-export const redisPassword = "CHANGE_ME";
-export const cache = createRedis({
-  url: `redis://:${redisPassword}@localhost:6379`,
-});
-
-cache
-  .connect()
-  .then(() => console.log("connected to cache"))
-  .catch(() => console.log("redis connection error"));
-
+export const mongoURL = process.env.MONGO_URL || "MONGODB_CONNECTION_STRING_HERE";
 ON_DEATH(async () => {
-  await cache.quit();
-  console.log("disconnected from cache");
+  await DBHelper.getInstance().disconnect();
   process.exit();
 });
 
@@ -56,17 +31,15 @@ export const backgroundLimiter2 = new RateLimiter({
 });
 
 //Logging
+const { combine, timestamp, label, printf } = format;
 const myFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
 export const logger = createLogger({
   format: combine(label({ label: "CAP Backend Service" }), timestamp(), myFormat),
   transports: [
-    new winston.transports.File({
+    new winston.transports.Console({
       level: "debug",
-      filename: "combined.log",
-      maxsize: 500 * 1024 * 1024, // 100MB
-      maxFiles: 2,
     }),
   ],
 });

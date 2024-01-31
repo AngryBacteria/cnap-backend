@@ -1,6 +1,7 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
-import DBHelper from "../../helpers/DBHelper";
-import { mongoURL } from "../../boot/config";
+import DBHelper from "../helpers/DBHelper";
+import { mongoURL } from "../boot/config";
+import MainTask from "../backgroundTasks/riot/MainTask";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(mongoURL, {
@@ -11,46 +12,19 @@ const client = new MongoClient(mongoURL, {
   },
 });
 async function run() {
-  try {
-    await migrateArchive()
-    await migrateMatches()
-    await migrateSummoners();
-  } finally {
-  }
+  const task = new MainTask();
+  await task.updateMatchData("", 300, 25)
 }
 
 async function migrateArchive() {
   try {
     await client.connect();
     const dbHelper = new DBHelper();
-    console.log("getting archive data");
-    const { data, error } = await dbHelper.executeQuery("select * from match_archive");
+    console.log("getting match data");
+    const { data, error } = await dbHelper.executeQuery("select * from match_archive limit 100");
     if (data && !error) {
       console.log("uploading to mongodb");
       const mappedArray = data.rows.map((item: { data: any }) => item.data);
-      await client.db("cnap").collection("match_archive").insertMany(mappedArray);
-    }
-  } finally {
-    await client.close();
-    console.log("finished");
-  }
-}
-
-async function migrateMatches() {
-  try {
-    await client.connect();
-    const dbHelper = new DBHelper();
-    console.log("getting matchv5 data");
-    const { data, error } = await dbHelper.executeQuery("select * from match_v5 limit 20");
-    if (data && !error) {
-      console.log("uploading to mongodb");
-      const mappedArray = data.rows.map((item: any) => ({
-        match_id: item.match_id,
-        puuid: item.puuid,
-        match_id_puuid: item.match_id_puuid,
-        data_participant: item.data_participant,
-        data_match: item.data_match,
-      }));
       await client.db("cnap").collection("match_v5").insertMany(mappedArray);
     }
   } finally {

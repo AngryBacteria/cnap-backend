@@ -1,7 +1,10 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
-import { cache, logger, mongoURL, pg } from "../boot/config";
-import { asyncWrap } from "./GlobalFunctions";
-import { MatchArchiveDB, MatchV5DB, SummonerDB } from "../interfaces/DBInterfaces";
+import { logger, mongoURL, pg } from "../boot/config";
+import { MatchV5DTO, SummonerDTO } from "../interfaces/CustomInterfaces";
+
+interface DynamicFilter {
+  [key: string]: string | number;
+}
 
 export default class DBHelper {
   private static instance: DBHelper;
@@ -19,6 +22,7 @@ export default class DBHelper {
   }
 
   //TODO implement sorting!!
+  //TODO: implement error handling
   public static getInstance(): DBHelper {
     if (!DBHelper.instance) {
       DBHelper.instance = new DBHelper();
@@ -26,17 +30,70 @@ export default class DBHelper {
     return DBHelper.instance;
   }
 
-  async getMatchArchive({
-    id = "",
-    queue = 0,
-    mode = "",
-    type = "",
-    offset = 0,
-    limit = 25,
-  }): Promise<MatchArchiveDB[]> {
+  async connect() {
+    this.mongoClient = await this.mongoClient.connect();
+    logger.info("Connected to MongoDB");
+  }
+
+  async disconnect() {
+    await this.mongoClient.close();
+    logger.info("Disconnected from MongoDB");
+  }
+
+  /**
+   * Retrieves the IDs that do not exist in the MongoDB collection `match_v5` from a given array of IDs.
+   *
+   * @param ids - An array of match_v5 IDs to check against the database.
+   * @returns A promise that resolves to an array of non-existing match IDs.
+   */
+  async getNonExistingMatchIds(ids: string[]) {
     try {
-      await this.mongoClient.connect();
-      let filter: any = {};
+      const db = this.mongoClient.db("cnap");
+      const collection = db.collection<MatchV5DTO>("match_v5");
+
+      const existingIds = await collection
+        .find({ "metadata.matchId": { $in: ids } }, { projection: { "metadata.matchId": 1 } })
+        .toArray();
+
+      const existingIdsSet = new Set(existingIds.map((match) => match.metadata.matchId));
+      const nonExistingIds = ids.filter((id) => !existingIdsSet.has(id));
+      logger.info(
+        `${ids.length - nonExistingIds.length} of ${ids.length} Matches were already present in the database`
+      );
+      return nonExistingIds;
+    } catch (error) {
+      logger.log("Could not check for existing match ids: ", error);
+    }
+  }
+
+  /**
+   * Updates or inserts match data in the MongoDB collection `match_v5`.
+   * Utilizes bulk write operations for efficiency.
+   *
+   * @param matches - An array of match data transfer objects to be upserted.
+   * @returns A promise that resolves when the operation is complete.
+   */
+  async updateMatches(matches: MatchV5DTO[]) {
+    try {
+      const db = this.mongoClient.db("cnap");
+      const collection = db.collection<MatchV5DTO>("match_v5");
+      const bulkOps = matches.map((match) => ({
+        updateOne: {
+          filter: { "metadata.matchId": match.metadata.matchId },
+          update: { $set: match },
+          upsert: true,
+        },
+      }));
+      const result = await collection.bulkWrite(bulkOps);
+      logger.info(`Updated ${result.upsertedCount} Match data`);
+    } catch (error) {
+      logger.error("Error uploading matches to MongoDB: ", error);
+    }
+  }
+
+  async getMatchesV5({ id = "", queue = 0, mode = "", type = "", offset = 0, limit = 25 }): Promise<MatchV5DTO[]> {
+    try {
+      const filter: DynamicFilter = {};
       if (id) {
         filter["metadata.matchId"] = id;
       }
@@ -49,83 +106,123 @@ export default class DBHelper {
       if (type) {
         filter["info.gameType"] = type;
       }
+      logger.info(`Getting Match data from DB [${filter}]`);
 
       const results = await this.mongoClient
         .db("cnap")
-        .collection<MatchArchiveDB>("match_archive")
+        .collection<MatchV5DTO>("match_v5")
         .find(filter)
         .skip(offset)
         .limit(limit)
         .toArray();
-      logger.info("Getting MatchArchive with MongoDB");
       return results;
-    } catch(error) {
+    } catch (error) {
       logger.error("Error getting MatchArchive with MongoDB: ", error);
-      return []
-    } finally {
-      await this.mongoClient.close();
+      return [];
     }
   }
 
-  async getMatchesV5({ puuid = "", queue = 0, mode = "", type = "", offset = 0, limit = 25 }): Promise<MatchV5DB[]> {
+  /**
+   * Fetches the match history of a summoner from the MongoDB collection `match_v5`.
+   * @param puuid puuID of the summoner
+   * @returns A promise that resolves to an array of reduced match data objects. They only include
+   * the summoner data and the metadata of the match.
+   */
+  async getSummonerMatchHistory(puuid: string, limit: number = 20) {
     try {
-      await this.mongoClient.connect();
-      let filter: any = {};
-      if (puuid) {
-        filter["data_participant.puuid"] = puuid;
-      }
-      if (queue) {
-        filter["data_match.queueId"] = queue;
-      }
-      if (mode) {
-        filter["data_match.gameMode"] = mode;
-      }
-      if (type) {
-        filter["data_match.gameType"] = type;
-      }
+      const agg = [
+        {
+          $match: {
+            "metadata.participants": {
+              $all: [puuid],
+            },
+          },
+        },
+        {
+          $limit: limit,
+        },
+        {
+          $set: {
+            "info.participants": {
+              $filter: {
+                input: "$info.participants",
+                as: "participant",
+                cond: {
+                  $eq: ["$$participant.puuid", puuid],
+                },
+              },
+            },
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: ["$info", "$metadata"],
+            },
+          },
+        },
+      ];
+      const coll = this.mongoClient.db("cnap").collection<MatchV5DTO>("match_v5");
+      const cursor = coll.aggregate(agg);
+      const result = await cursor.toArray();
 
-      const results = await this.mongoClient
-        .db("cnap")
-        .collection<MatchV5DB>("match_v5")
-        .find(filter)
-        .skip(offset)
-        .limit(limit)
-        .toArray();
-      logger.info("Getting MatchesV5 with MongoDB");
-      return results;
-    } catch(error) {
-      logger.error("Error getting MatchesV5 with MongoDB", error);
-      return []
-    } finally {
-      await this.mongoClient.close();
+      return result;
+    } catch (error) {
+      logger.error(`Error getting MatchArchive for Summoner [${puuid}] with MongoDB: ${error}`);
+      return [];
     }
   }
 
-  async getSummoners({ name = "", puuid = "", skip = 0, limit = 25 }): Promise<SummonerDB[]> {
+  async getSummoners({ name = "", puuid = "", skip = 0, limit = 25 }): Promise<SummonerDTO[]> {
     try {
-      await this.mongoClient.connect();
-      let filter: any = {};
+      const filter: DynamicFilter = {};
       if (name) {
         filter["name"] = name;
       }
       if (puuid) {
         filter["puuid"] = puuid;
       }
+      logger.info(`Getting Summoner data from DB [${filter?.puuid}, ${filter?.name}]`);
 
       const results = await this.mongoClient
         .db("cnap")
-        .collection<SummonerDB>("summoner")
+        .collection<SummonerDTO>("summoner")
         .find(filter)
         .skip(skip)
         .limit(limit)
         .toArray();
       logger.info("Getting Summoners with MongoDB");
       return results;
-    } catch(error) {
+    } catch (error) {
       logger.error("Error getting Summoners with MongoDB");
-      return []
-    } finally {
-      await this.mongoClient.close();
+      return [];
+    }
+  }
+
+  /**
+   * Updates or inserts summoner data in the MongoDB collection `summoner`.
+   * Utilizes bulk write operations for efficiency.
+   *
+   * @param summoners - An array of summoner data transfer objects to be upserted.
+   * @returns A promise that resolves when the operation is complete.
+   */
+  async updateSummoners(summoners: SummonerDTO[]) {
+    try {
+      const db = this.mongoClient.db("cnap");
+      const collection = db.collection<SummonerDTO>("summoner");
+
+      const bulkOps = summoners.map((summoner) => ({
+        updateOne: {
+          filter: { puuid: summoner.puuid },
+          update: { $set: summoner },
+          upsert: true,
+        },
+      }));
+
+      const result = await collection.bulkWrite(bulkOps);
+      logger.info(`Updated ${result.upsertedCount} summoner data`);
+    } catch (error) {
+      logger.error("Error uploading summoners to MongoDB: ", error);
     }
   }
 
@@ -137,9 +234,9 @@ export default class DBHelper {
    * @returns
    */
   async executeQuery(query: any) {
-    const { data: client, error: clientError } = await asyncWrap(pg.connect());
+    const { data: client, error: clientError } = await this.asyncWrap(pg.connect());
     if (client) {
-      const { data: data, error: queryError } = await asyncWrap(client.query(query));
+      const { data: data, error: queryError } = await this.asyncWrap(client.query(query));
       client.release(true);
       if (queryError) {
         logger.error(`Inserting into Postgres failed with error: ${queryError}`);
@@ -151,64 +248,12 @@ export default class DBHelper {
     return { data: null, error: clientError };
   }
 
-  /**
-   * Gets a Javascript Object from the redis database and parses it with JSON.parse()
-   * @param key Unique Key for the redis database
-   * @returns Response from redis. Either null or the Object
-   */
-  async getObjectFromRedis(key: string): Promise<any> {
+  async asyncWrap(promise: Promise<any>): Promise<{ data: any; error: any }> {
     try {
-      const obj = await cache.get(key);
-      if (obj) {
-        return JSON.parse(obj);
-      } else return null;
-    } catch (e) {
-      logger.error(`Error getting item [${key}] from cache: ${e}`);
-      return null;
-    }
-  }
-
-  /**
-   * Method to set an Object in the Redis Database. The object gets turned into a string with JSON.stringify
-   * @param key  Unique Key for the redis database
-   * @param value Javascript Object
-   * @param expiry Number of seconds the value should stay in the database. Standard expiry is infinite
-   */
-  async setObjectInRedis(key: string, value: any, expiry: number = -1) {
-    try {
-      expiry === -1
-        ? await cache.set(key, JSON.stringify(value))
-        : await cache.set(key, JSON.stringify(value), { EX: expiry });
-    } catch (e) {
-      logger.error(`Error setting item [${key}] from cache: ${e}`);
-    }
-  }
-
-  /**
-   * Gets an element from the redis database
-   * @param key Unique Key for the redis database
-   * @returns Response from redis. Either null or the data
-   */
-  async getElementFromRedis(key: string) {
-    try {
-      return await cache.get(key);
-    } catch (e) {
-      logger.error(`Error getting item [${key}] from cache: ${e}`);
-      return null;
-    }
-  }
-
-  /**
-   * Method to set an item in the Redis Database
-   * @param key  Unique Key for the redis database
-   * @param value Item to be saved in the database
-   * @param expiry Number of seconds the value should stay in the database. Standard expiry is infinite
-   */
-  async setElementInRedis(key: string, value: any, expiry: number = -1) {
-    try {
-      expiry === -1 ? await cache.set(key, value) : await cache.set(key, value, { EX: expiry });
-    } catch (e) {
-      logger.error(`Error setting item [${key}] from cache: ${e}`);
+      const data = await promise;
+      return { data: data, error: null };
+    } catch (error) {
+      return { data: null, error: error };
     }
   }
 }
