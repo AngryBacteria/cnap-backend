@@ -1,6 +1,9 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
-import { logger, mongoURL, pg } from "../boot/config";
+import { pg } from "../boot/config";
+import { logger } from "../config/logging";
 import { MatchV5DTO, SummonerDTO } from "../interfaces/CustomInterfaces";
+import ON_DEATH from "death";
+import { config } from "dotenv";
 
 interface DynamicFilter {
   [key: string]: string | number;
@@ -12,13 +15,18 @@ export default class DBHelper {
   public mongoClient: MongoClient;
 
   constructor() {
-    this.mongoClient = new MongoClient(mongoURL, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      },
-    });
+    config();
+    if (process.env.MONGODB_CONNECTION_STRING) {
+      this.mongoClient = new MongoClient(process.env.MONGODB_CONNECTION_STRING, {
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: true,
+          deprecationErrors: true,
+        },
+      });
+    } else {
+      throw new Error("No MongoDB Connection String found in Environment");
+    }
   }
 
   //TODO implement sorting!!
@@ -191,7 +199,6 @@ export default class DBHelper {
         .skip(skip)
         .limit(limit)
         .toArray();
-      logger.info("Getting Summoners with MongoDB");
       return results;
     } catch (error) {
       logger.error("Error getting Summoners with MongoDB");
@@ -257,3 +264,8 @@ export default class DBHelper {
     }
   }
 }
+
+ON_DEATH(async () => {
+  await DBHelper.getInstance().disconnect();
+  process.exit();
+});

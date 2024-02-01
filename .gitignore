@@ -6,3 +6,4 @@
 /api.log
 /combined.log
 /src/boot/serviceAccount.json
+.env

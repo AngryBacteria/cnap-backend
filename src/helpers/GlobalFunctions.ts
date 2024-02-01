@@ -1,7 +1,7 @@
 import Express from "express";
 
 /**
- * Extracts typical query parameters from an Express Request object 
+ * Extracts typical query parameters from an Express Request object
  */
 export function prepareQuery(req: Express.Request) {
   const queue = req.query.queue;

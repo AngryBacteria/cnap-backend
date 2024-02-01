@@ -1,10 +1,13 @@
-import { backgroundLimiter1, backgroundLimiter2, logger, riotApiKey } from "../boot/config";
+import { logger } from "../config/logging";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import { MatchV5DTO, SummonerDTO } from "../interfaces/CustomInterfaces";
+import { backgroundLimiter1, backgroundLimiter2 } from "../config/limiting";
+import { config } from "dotenv";
 
 export default class RiotHelper {
   private static instance: RiotHelper;
+  private riotApiKey: string;
 
   constructor() {
     axiosRetry(axios, {
@@ -14,6 +17,13 @@ export default class RiotHelper {
         return retryCount * 2000; // time interval between retries
       },
     });
+
+    config();
+    if (process.env.RIOT_API_KEY) {
+      this.riotApiKey = process.env.RIOT_API_KEY;
+    } else {
+      throw new Error("No Riot API Key found in Environment");
+    }
   }
 
   public static getInstance(): RiotHelper {
@@ -33,7 +43,7 @@ export default class RiotHelper {
       logger.info(`Fetching Match [${matchId}] with Riot-API`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${this.riotApiKey}`;
       const axiosResponse = await axios.get(url);
       const match = axiosResponse.data;
       return match;
@@ -51,7 +61,7 @@ export default class RiotHelper {
       logger.info(`Fetching Matchlist [${summoner.name}] with Riot-API`);
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
-      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.puuid}/ids?start=${offset}&count=${count}&api_key=${riotApiKey}`;
+      const url = `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.puuid}/ids?start=${offset}&count=${count}&api_key=${this.riotApiKey}`;
       const axiosResponse = await axios.get(url);
       return axiosResponse.data;
     } catch (e) {
@@ -66,7 +76,7 @@ export default class RiotHelper {
   async getSummonerByNameRiot(name: string): Promise<SummonerDTO> {
     try {
       logger.info(`Fetching Summoner [${name}] with Riot-API`);
-      const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
+      const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${this.riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
       const axiosResponse = await axios.get(url);
@@ -82,7 +92,7 @@ export default class RiotHelper {
   async getSummonerByPuuidRiot(puuid: string): Promise<SummonerDTO> {
     try {
       logger.info(`Fetching Summoner [${puuid}] with Riot-API`);
-      const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${riotApiKey}`;
+      const url = `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${this.riotApiKey}`;
       await backgroundLimiter1.removeTokens(1);
       await backgroundLimiter2.removeTokens(1);
       const axiosResponse = await axios.get(url);

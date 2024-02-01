@@ -1,4 +1,4 @@
-import { logger } from "../../boot/config";
+import { logger } from "../../config/logging";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import DBHelper from "../../helpers/DBHelper";
@@ -77,7 +77,7 @@ export default class MainTask {
   async updateSummonerData() {
     const existingSummoners = await this.dbHelper.getSummoners({});
     if (existingSummoners) {
-      const newSummoners: SummonerDTO[] = []
+      const newSummoners: SummonerDTO[] = [];
       for (const summoner of existingSummoners) {
         try {
           const summonerRiot = await this.riotHelper.getSummonerByPuuidRiot(summoner.puuid);

@@ -2,7 +2,7 @@ import express from "express";
 import Express from "express";
 import DBHelper from "../../../helpers/DBHelper";
 import RiotHelper from "../../../helpers/RiotHelper";
-import { logger } from "../../../boot/config";
+import { logger } from "../../../config/logging";
 
 const router = express.Router();
 const baseUrl = "/summoner";

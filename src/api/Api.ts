@@ -1,4 +1,3 @@
-import { expressInstance, pathToEndpoints } from "../boot/config";
 import express from "express";
 import base from "./routes/base/Base";
 import match from "./routes/match/Match";
@@ -7,12 +6,15 @@ import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import cors from "cors";
 import DBHelper from "../helpers/DBHelper";
+import path from "path";
 
 //Config
 const port = 3000;
 const baseUrl = "/api/v1";
 
 //cors
+export const expressInstance = express();
+export const pathToEndpoints = path.join("src", "api", "routes", "**", "*.ts");
 expressInstance.use(cors());
 
 //Swagger
