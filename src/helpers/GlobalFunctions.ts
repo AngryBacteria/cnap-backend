@@ -1,4 +1,4 @@
-import Express from "express";
+import Express from 'express';
 
 /**
  * Extracts typical query parameters from an Express Request object

@@ -1,9 +1,10 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
-import { pg } from "../boot/config";
-import { logger } from "../config/logging";
-import { MatchV5DTO, SummonerDTO } from "../interfaces/CustomInterfaces";
-import ON_DEATH from "death";
-import { config } from "dotenv";
+import { MongoClient, ServerApiVersion } from 'mongodb';
+import { pgClient } from '../boot/config.js';
+import { logger } from '../config/logging.js';
+import { MatchV5DTO, SummonerDTO } from '../interfaces/CustomInterfaces.js';
+import { config } from 'dotenv';
+
+//TODO: implement on death disconnect
 
 interface DynamicFilter {
   [key: string]: string | number;
@@ -17,15 +18,18 @@ export default class DBHelper {
   constructor() {
     config();
     if (process.env.MONGODB_CONNECTION_STRING) {
-      this.mongoClient = new MongoClient(process.env.MONGODB_CONNECTION_STRING, {
-        serverApi: {
-          version: ServerApiVersion.v1,
-          strict: true,
-          deprecationErrors: true,
+      this.mongoClient = new MongoClient(
+        process.env.MONGODB_CONNECTION_STRING,
+        {
+          serverApi: {
+            version: ServerApiVersion.v1,
+            strict: true,
+            deprecationErrors: true,
+          },
         },
-      });
+      );
     } else {
-      throw new Error("No MongoDB Connection String found in Environment");
+      throw new Error('No MongoDB Connection String found in Environment');
     }
   }
 
@@ -40,12 +44,12 @@ export default class DBHelper {
 
   async connect() {
     this.mongoClient = await this.mongoClient.connect();
-    logger.info("Connected to MongoDB");
+    logger.info('Connected to MongoDB');
   }
 
   async disconnect() {
     await this.mongoClient.close();
-    logger.info("Disconnected from MongoDB");
+    logger.info('Disconnected from MongoDB');
   }
 
   /**
@@ -56,21 +60,32 @@ export default class DBHelper {
    */
   async getNonExistingMatchIds(ids: string[]) {
     try {
-      const db = this.mongoClient.db("cnap");
-      const collection = db.collection<MatchV5DTO>("match_v5");
+      if (ids.length === 0) {
+        return [];
+      }
+      const db = this.mongoClient.db('cnap');
+      const collection = db.collection<MatchV5DTO>('match_v5');
 
       const existingIds = await collection
-        .find({ "metadata.matchId": { $in: ids } }, { projection: { "metadata.matchId": 1 } })
+        .find(
+          { 'metadata.matchId': { $in: ids } },
+          { projection: { 'metadata.matchId': 1 } },
+        )
         .toArray();
 
-      const existingIdsSet = new Set(existingIds.map((match) => match.metadata.matchId));
+      const existingIdsSet = new Set(
+        existingIds.map((match) => match.metadata.matchId),
+      );
       const nonExistingIds = ids.filter((id) => !existingIdsSet.has(id));
       logger.info(
-        `${ids.length - nonExistingIds.length} of ${ids.length} Matches were already present in the database`
+        `${ids.length - nonExistingIds.length} of ${
+          ids.length
+        } Matches were already present in the database`,
       );
       return nonExistingIds;
     } catch (error) {
-      logger.log("Could not check for existing match ids: ", error);
+      logger.log('Could not check for existing match ids: ', error);
+      throw new Error('Could not check for existing match ids');
     }
   }
 
@@ -83,11 +98,11 @@ export default class DBHelper {
    */
   async updateMatches(matches: MatchV5DTO[]) {
     try {
-      const db = this.mongoClient.db("cnap");
-      const collection = db.collection<MatchV5DTO>("match_v5");
+      const db = this.mongoClient.db('cnap');
+      const collection = db.collection<MatchV5DTO>('match_v5');
       const bulkOps = matches.map((match) => ({
         updateOne: {
-          filter: { "metadata.matchId": match.metadata.matchId },
+          filter: { 'metadata.matchId': match.metadata.matchId },
           update: { $set: match },
           upsert: true,
         },
@@ -95,113 +110,131 @@ export default class DBHelper {
       const result = await collection.bulkWrite(bulkOps);
       logger.info(`Updated ${result.upsertedCount} Match data`);
     } catch (error) {
-      logger.error("Error uploading matches to MongoDB: ", error);
+      logger.error('Error uploading matches to MongoDB: ', error);
     }
   }
 
-  async getMatchesV5({ id = "", queue = 0, mode = "", type = "", offset = 0, limit = 25 }): Promise<MatchV5DTO[]> {
+  async getMatchesV5({
+    id = '',
+    queue = 0,
+    mode = '',
+    type = '',
+    offset = 0,
+    limit = 25,
+  }): Promise<MatchV5DTO[]> {
     try {
       const filter: DynamicFilter = {};
       if (id) {
-        filter["metadata.matchId"] = id;
+        filter['metadata.matchId'] = id;
       }
       if (queue) {
-        filter["info.queueId"] = queue;
+        filter['info.queueId'] = queue;
       }
       if (mode) {
-        filter["info.gameMode"] = mode;
+        filter['info.gameMode'] = mode;
       }
       if (type) {
-        filter["info.gameType"] = type;
+        filter['info.gameType'] = type;
       }
       logger.info(`Getting Match data from DB [${filter}]`);
 
       const results = await this.mongoClient
-        .db("cnap")
-        .collection<MatchV5DTO>("match_v5")
+        .db('cnap')
+        .collection<MatchV5DTO>('match_v5')
         .find(filter)
         .skip(offset)
         .limit(limit)
         .toArray();
       return results;
     } catch (error) {
-      logger.error("Error getting MatchArchive with MongoDB: ", error);
+      logger.error('Error getting MatchArchive with MongoDB: ', error);
       return [];
     }
   }
 
   /**
    * Fetches the match history of a summoner from the MongoDB collection `match_v5`.
-   * @param puuid puuID of the summoner
+   * @param puuid puuid of the summoner
    * @returns A promise that resolves to an array of reduced match data objects. They only include
    * the summoner data and the metadata of the match.
    */
-  async getSummonerMatchHistory(puuid: string, limit: number = 20) {
+  async getSummonerMatchHistory(
+    puuid: string,
+    limit: number = 20,
+    skip: number = 0,
+  ) {
     try {
       const agg = [
         {
           $match: {
-            "metadata.participants": {
+            'metadata.participants': {
               $all: [puuid],
             },
           },
+        },
+        {
+          $skip: skip,
         },
         {
           $limit: limit,
         },
         {
           $set: {
-            "info.participants": {
+            'info.participants': {
               $filter: {
-                input: "$info.participants",
-                as: "participant",
+                input: '$info.participants',
+                as: 'participant',
                 cond: {
-                  $eq: ["$$participant.puuid", puuid],
+                  $eq: ['$$participant.puuid', puuid],
                 },
               },
             },
           },
         },
-        {
-          $replaceRoot: {
-            newRoot: {
-              $mergeObjects: ["$info", "$metadata"],
-            },
-          },
-        },
       ];
-      const coll = this.mongoClient.db("cnap").collection<MatchV5DTO>("match_v5");
+      const coll = this.mongoClient
+        .db('cnap')
+        .collection<MatchV5DTO>('match_v5');
       const cursor = coll.aggregate(agg);
       const result = await cursor.toArray();
 
       return result;
     } catch (error) {
-      logger.error(`Error getting MatchArchive for Summoner [${puuid}] with MongoDB: ${error}`);
+      logger.error(
+        `Error getting MatchArchive for Summoner [${puuid}] with MongoDB: ${error}`,
+      );
       return [];
     }
   }
 
-  async getSummoners({ name = "", puuid = "", skip = 0, limit = 25 }): Promise<SummonerDTO[]> {
+  async getSummoners({
+    name = '',
+    puuid = '',
+    skip = 0,
+    limit = 25,
+  }): Promise<SummonerDTO[]> {
     try {
       const filter: DynamicFilter = {};
       if (name) {
-        filter["name"] = name;
+        filter['name'] = name;
       }
       if (puuid) {
-        filter["puuid"] = puuid;
+        filter['puuid'] = puuid;
       }
-      logger.info(`Getting Summoner data from DB [${filter?.puuid}, ${filter?.name}]`);
+      logger.info(
+        `Getting Summoner data from DB [${filter?.puuid}, ${filter?.name}]`,
+      );
 
       const results = await this.mongoClient
-        .db("cnap")
-        .collection<SummonerDTO>("summoner")
+        .db('cnap')
+        .collection<SummonerDTO>('summoner')
         .find(filter)
         .skip(skip)
         .limit(limit)
         .toArray();
       return results;
     } catch (error) {
-      logger.error("Error getting Summoners with MongoDB");
+      logger.error('Error getting Summoners with MongoDB');
       return [];
     }
   }
@@ -215,8 +248,8 @@ export default class DBHelper {
    */
   async updateSummoners(summoners: SummonerDTO[]) {
     try {
-      const db = this.mongoClient.db("cnap");
-      const collection = db.collection<SummonerDTO>("summoner");
+      const db = this.mongoClient.db('cnap');
+      const collection = db.collection<SummonerDTO>('summoner');
 
       const bulkOps = summoners.map((summoner) => ({
         updateOne: {
@@ -229,7 +262,7 @@ export default class DBHelper {
       const result = await collection.bulkWrite(bulkOps);
       logger.info(`Updated ${result.upsertedCount} summoner data`);
     } catch (error) {
-      logger.error("Error uploading summoners to MongoDB: ", error);
+      logger.error('Error uploading summoners to MongoDB: ', error);
     }
   }
 
@@ -240,21 +273,28 @@ export default class DBHelper {
    * @param query SQL query that should be executed
    * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async executeQuery(query: any) {
-    const { data: client, error: clientError } = await this.asyncWrap(pg.connect());
+    const { data: client, error: clientError } = await this.asyncWrap(
+      pgClient.connect(),
+    );
     if (client) {
-      const { data: data, error: queryError } = await this.asyncWrap(client.query(query));
+      const { data: data, error: queryError } = await this.asyncWrap(
+        client.query(query),
+      );
       client.release(true);
       if (queryError) {
-        logger.error(`Inserting into Postgres failed with error: ${queryError}`);
+        logger.error(
+          `Inserting into Postgres failed with error: ${queryError}`,
+        );
         return { data: null, error: queryError };
       }
       return { data: data, error: null };
     }
-    logger.error(`Error creating pg client: ${clientError}`);
+    logger.error(`Error creating pgClient client: ${clientError}`);
     return { data: null, error: clientError };
   }
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async asyncWrap(promise: Promise<any>): Promise<{ data: any; error: any }> {
     try {
       const data = await promise;
@@ -264,8 +304,3 @@ export default class DBHelper {
     }
   }
 }
-
-ON_DEATH(async () => {
-  await DBHelper.getInstance().disconnect();
-  process.exit();
-});

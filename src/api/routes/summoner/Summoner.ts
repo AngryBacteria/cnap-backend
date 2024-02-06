@@ -1,11 +1,11 @@
-import express from "express";
-import Express from "express";
-import DBHelper from "../../../helpers/DBHelper";
-import RiotHelper from "../../../helpers/RiotHelper";
-import { logger } from "../../../config/logging";
+import express from 'express';
+import Express from 'express';
+import DBHelper from '../../../helpers/DBHelper.js';
+import RiotHelper from '../../../helpers/RiotHelper.js';
+import { logger } from '../../../config/logging.js';
 
 const router = express.Router();
-const baseUrl = "/summoner";
+const baseUrl = '/summoner';
 const dbHelper = DBHelper.getInstance();
 const riotHelper = RiotHelper.getInstance();
 
@@ -59,31 +59,36 @@ router.get(baseUrl, async (req: Express.Request, res: Express.Response) => {
  *         type: string
  *         description: puuid of a summoner
  */
-router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.Response) => {
-  const puuid = req.params.puuid;
+router.get(
+  baseUrl + '/puuid/:puuid',
+  async (req: Express.Request, res: Express.Response) => {
+    const puuid = req.params.puuid;
 
-  //mongodb
-  const results = await dbHelper.getSummoners({
-    puuid: puuid,
-  });
+    //mongodb
+    const results = await dbHelper.getSummoners({
+      puuid: puuid,
+    });
 
-  if (results.length >= 1) {
-    res.send(results[0]);
-    logger.info(`Api-Request for Summoner [${puuid}] with Method: MongoDB`);
-    return;
-  }
-
-  //riot api
-  try {
-    const riotSummoner = await riotHelper.getSummonerByPuuidRiot(puuid);
-    if (riotSummoner) {
-      res.send(riotSummoner);
-      logger.info(`Api-Request for Summoner [${puuid}] with Method: RIOT-API`);
+    if (results.length >= 1) {
+      res.send(results[0]);
+      logger.info(`Api-Request for Summoner [${puuid}] with Method: MongoDB`);
+      return;
     }
-  } catch (error) {
-    res.status(404).send(`No summoner found with puuid [${puuid}]`);
-  }
-});
+
+    //riot api
+    try {
+      const riotSummoner = await riotHelper.getSummonerByPuuidRiot(puuid);
+      if (riotSummoner) {
+        res.send(riotSummoner);
+        logger.info(
+          `Api-Request for Summoner [${puuid}] with Method: RIOT-API`,
+        );
+      }
+    } catch (error) {
+      res.status(404).send(`No summoner found with puuid [${puuid}]`);
+    }
+  },
+);
 
 /**
  * @swagger
@@ -102,30 +107,38 @@ router.get(baseUrl + "/puuid/:puuid", async (req: Express.Request, res: Express.
  *         type: string
  *         description: name of a summoner
  */
-router.get(baseUrl + "/name/:name", async (req: Express.Request, res: Express.Response) => {
-  const name = req.params.name;
+router.get(
+  baseUrl + '/name/:name',
+  async (req: Express.Request, res: Express.Response) => {
+    const name = req.params.name;
 
-  //mongodb
-  const results = await dbHelper.getSummoners({
-    name: name,
-  });
+    //mongodb
+    const results = await dbHelper.getSummoners({
+      name: name,
+    });
 
-  if (results.length >= 1) {
-    res.send(results[0]);
-    logger.info(`Api-Request for Summoner [${name}] with Method: MongoDB`);
-    return;
-  }
-
-  //riot api
-  try {
-    const riotSummoner = await riotHelper.getSummonerByNameRiot(name);
-    if (riotSummoner) {
-      res.send(riotSummoner);
-      logger.info(`Api-Request for Summoner [${name}] with Method: RIOT-API`);
+    if (results.length >= 1) {
+      res.send(results[0]);
+      logger.info(`Api-Request for Summoner [${name}] with Method: MongoDB`);
+      return;
     }
-  } catch (error) {
-    res.status(404).send(`No summoner found with name [${name}]`);
-  }
-});
+
+    //riot api
+    try {
+      const nameIsolated = name.split('#')[0];
+      const tag = name.split('#')[1];
+      const riotSummoner = await riotHelper.getSummonerByAccountTag(
+        nameIsolated,
+        tag,
+      );
+      if (riotSummoner) {
+        res.send(riotSummoner);
+        logger.info(`Api-Request for Summoner [${name}] with Method: RIOT-API`);
+      }
+    } catch (error) {
+      res.status(404).send(`No summoner found with name [${name}]`);
+    }
+  },
+);
 
 export default router;

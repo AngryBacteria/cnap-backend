@@ -1,0 +1,116 @@
+##########################################################################
+# Title:            Sandpit: template role                               #
+# Author(s):        Grostim                                              #
+# URL:              https://github.com/saltyorg/Sandpit                  #
+# --                                                                     #
+##########################################################################
+#                   GNU General Public License v3.0                      #
+##########################################################################
+---
+################################
+# Basics
+################################
+
+cnaptask_name: cnaptask
+
+################################
+# Paths
+################################
+
+cnaptask_paths_folder: '{{ cnaptask_name }}'
+cnaptask_paths_location: '{{ server_appdata_path }}/{{ cnaptask_paths_folder }}'
+cnaptask_paths_folders_list:
+  - '{{ cnaptask_paths_location }}'
+
+################################
+# Docker
+################################
+
+# Container
+cnaptask_docker_container: '{{ cnaptask_name }}'
+
+# Image
+cnaptask_docker_image_pull: false
+cnaptask_docker_image_tag: 'latest'
+cnaptask_docker_image: 'angrybacteria/cnaptask:{{ cnaptask_docker_image_tag }}'
+
+# Ports
+cnaptask_docker_ports_defaults:
+  - '{{ cnaptask_web_port }}'
+cnaptask_docker_ports_custom: []
+cnaptask_docker_ports: '{{ cnaptask_docker_ports_defaults
+  + cnaptask_docker_ports_custom
+  if (not reverse_proxy_is_enabled)
+  else [] + cnaptask_docker_ports_custom }}'
+
+# Envs
+cnaptask_docker_envs_default:
+  PUID: '{{ uid }}'
+  PGID: '{{ gid }}'
+  TZ: '{{ tz }}'
+cnaptask_docker_envs_custom: {}
+cnaptask_docker_envs: '{{ cnaptask_docker_envs_default
+  | combine(cnaptask_docker_envs_custom) }}'
+
+# Commands
+cnaptask_docker_commands_default: []
+cnaptask_docker_commands_custom: []
+cnaptask_docker_commands: '{{ cnaptask_docker_commands_default
+  + cnaptask_docker_commands_custom }}'
+
+# Volumes
+cnaptask_docker_volumes_default:
+  - '{{ cnaptask_paths_location }}:/config'
+cnaptask_docker_volumes_custom: []
+cnaptask_docker_volumes: '{{ cnaptask_docker_volumes_default
+  + cnaptask_docker_volumes_custom
+  + docker_volumes_downloads_common }}'
+
+# Devices
+cnaptask_docker_devices_default: []
+cnaptask_docker_devices_custom: []
+cnaptask_docker_devices: '{{ cnaptask_docker_devices_default
+  + cnaptask_docker_devices_custom }}'
+
+# Hosts
+cnaptask_docker_hosts_default: []
+cnaptask_docker_hosts_custom: []
+cnaptask_docker_hosts: '{{ docker_hosts_common
+  | combine(cnaptask_docker_hosts_default)
+  | combine(cnaptask_docker_hosts_custom) }}'
+
+# Labels
+cnaptask_docker_labels_default: {}
+cnaptask_docker_labels_custom: {}
+cnaptask_docker_labels: '{{ docker_labels_common
+  | combine(cnaptask_docker_labels_default)
+  | combine(cnaptask_docker_labels_custom) }}'
+
+# Hostname
+cnaptask_docker_hostname: '{{ cnaptask_name }}'
+
+# Networks
+cnaptask_docker_networks_alias: '{{ cnaptask_name }}'
+cnaptask_docker_networks_default: []
+cnaptask_docker_networks_custom: []
+cnaptask_docker_networks: '{{ docker_networks_common
+  + cnaptask_docker_networks_default
+  + cnaptask_docker_networks_custom }}'
+
+# Capabilities
+cnaptask_docker_capabilities_default: []
+cnaptask_docker_capabilities_custom: []
+cnaptask_docker_capabilities: '{{ cnaptask_docker_capabilities_default
+  + cnaptask_docker_capabilities_custom }}'
+
+# Security Opts
+cnaptask_docker_security_opts_default: []
+cnaptask_docker_security_opts_custom: []
+cnaptask_docker_security_opts: '{{ cnaptask_docker_security_opts_default
+  + cnaptask_docker_security_opts_custom }}'
+
+# Restart Policy
+cnaptask_docker_restart_policy: unless-stopped
+
+# State
+cnaptask_docker_state: started

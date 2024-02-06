@@ -195,8 +195,8 @@ export interface Style {
 }
 
 export enum Description {
-  PrimaryStyle = "primaryStyle",
-  SubStyle = "subStyle",
+  PrimaryStyle = 'primaryStyle',
+  SubStyle = 'subStyle',
 }
 
 export interface Selection {
@@ -237,4 +237,10 @@ export interface Metadata {
   matchId: string;
   dataVersion: string;
   participants: string[];
+}
+
+export interface AccountDto {
+  puuid: string;
+  gameName: string;
+  tagLine: string;
 }
