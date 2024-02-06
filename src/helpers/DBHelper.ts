@@ -173,6 +173,11 @@ export default class DBHelper {
           },
         },
         {
+          $sort: {
+            'info.gameCreation': -1,
+          },
+        },
+        {
           $skip: skip,
         },
         {
