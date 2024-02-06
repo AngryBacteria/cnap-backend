@@ -35,6 +35,9 @@ export default class DBHelper {
 
   //TODO implement sorting!!
   //TODO: implement error handling
+  //TODO implement more env variables via docker
+  //TODO: implement on death disconnect
+  //TODO: better logging
   public static getInstance(): DBHelper {
     if (!DBHelper.instance) {
       DBHelper.instance = new DBHelper();
