@@ -1,5 +1,4 @@
 import { MongoClient, ServerApiVersion } from 'mongodb';
-import { pgClient } from '../boot/config.js';
 import { logger } from '../config/logging.js';
 import { MatchV5DTO, SummonerDTO } from '../interfaces/CustomInterfaces.js';
 import { config } from 'dotenv';
@@ -271,44 +270,6 @@ export default class DBHelper {
       logger.info(`Updated ${result.upsertedCount} summoner data`);
     } catch (error) {
       logger.error('Error uploading summoners to MongoDB: ', error);
-    }
-  }
-
-  /**
-   * Function that executes a PostgreSQL query. It first fetches a client from the postgres pool.
-   * If a client was able to be fetched it executes the query. If any errors occur it returns an error and no data.
-   * If the query was successful it returns data and no error.
-   * @param query SQL query that should be executed
-   * @returns
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async executeQuery(query: any) {
-    const { data: client, error: clientError } = await this.asyncWrap(
-      pgClient.connect(),
-    );
-    if (client) {
-      const { data: data, error: queryError } = await this.asyncWrap(
-        client.query(query),
-      );
-      client.release(true);
-      if (queryError) {
-        logger.error(
-          `Inserting into Postgres failed with error: ${queryError}`,
-        );
-        return { data: null, error: queryError };
-      }
-      return { data: data, error: null };
-    }
-    logger.error(`Error creating pgClient client: ${clientError}`);
-    return { data: null, error: clientError };
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async asyncWrap(promise: Promise<any>): Promise<{ data: any; error: any }> {
-    try {
-      const data = await promise;
-      return { data: data, error: null };
-    } catch (error) {
-      return { data: null, error: error };
     }
   }
 }
