@@ -244,3 +244,42 @@ export interface AccountDto {
   gameName: string;
   tagLine: string;
 }
+
+export interface ChampionMasteryDTO {
+  puuid: string;
+  championID: number;
+  championLevel: number;
+  championPoints: number;
+  lastPlayTime: number;
+  championPointsSinceLastLevel: number;
+  championPointsUntilNextLevel: number;
+  markRequiredForNextLevel: number;
+  tokensEarned: number;
+  championSeasonMilestone: number;
+  nextSeasonMilestone: NextSeasonMilestone;
+  milestoneGrades?: string[];
+}
+
+export interface NextSeasonMilestone {
+  requireGradeCounts: RequireGradeCounts;
+  rewardMarks: number;
+  bonus: boolean;
+  rewardConfig?: RewardConfig;
+  totalGamesRequires: number;
+}
+
+export interface RequireGradeCounts {
+  b?: number;
+  c: number;
+  a?: number;
+}
+
+export interface RewardConfig {
+  rewardValue: string;
+  rewardType: RewardType;
+  maximumReward: number;
+}
+
+export enum RewardType {
+  HextechChest = 'HEXTECH_CHEST',
+}

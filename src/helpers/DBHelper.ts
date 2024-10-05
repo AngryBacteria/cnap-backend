@@ -37,7 +37,7 @@ export default class DBHelper {
   //TODO implement more env variables via docker
   //TODO: implement on death disconnect
   //TODO: better logging
-  public static getInstance(): DBHelper {
+  public static getInstance() {
     if (!DBHelper.instance) {
       DBHelper.instance = new DBHelper();
     }
@@ -47,11 +47,13 @@ export default class DBHelper {
   async connect() {
     this.mongoClient = await this.mongoClient.connect();
     logger.info('Connected to MongoDB');
+    return true;
   }
 
   async disconnect() {
     await this.mongoClient.close();
     logger.info('Disconnected from MongoDB');
+    return true;
   }
 
   /**
@@ -111,8 +113,10 @@ export default class DBHelper {
       }));
       const result = await collection.bulkWrite(bulkOps);
       logger.info(`Updated ${result.upsertedCount} Match data`);
+      return true;
     } catch (error) {
       logger.error('Error uploading matches to MongoDB: ', error);
+      return false;
     }
   }
 
@@ -123,7 +127,7 @@ export default class DBHelper {
     type = '',
     offset = 0,
     limit = 25,
-  }): Promise<MatchV5DTO[]> {
+  }) {
     try {
       const filter: DynamicFilter = {};
       if (id) {
@@ -140,14 +144,13 @@ export default class DBHelper {
       }
       logger.info(`Getting Match data from DB [${filter}]`);
 
-      const results = await this.mongoClient
+      return await this.mongoClient
         .db('cnap')
         .collection<MatchV5DTO>('match_v5')
         .find(filter)
         .skip(offset)
         .limit(limit)
         .toArray();
-      return results;
     } catch (error) {
       logger.error('Error getting MatchArchive with MongoDB: ', error);
       return [];
@@ -157,6 +160,8 @@ export default class DBHelper {
   /**
    * Fetches the match history of a summoner from the MongoDB collection `match_v5`.
    * @param puuid puuid of the summoner
+   * @param limit number of matches to fetch
+   * @param skip number of matches to skip
    * @returns A promise that resolves to an array of reduced match data objects. They only include
    * the summoner data and the metadata of the match.
    */
@@ -203,9 +208,7 @@ export default class DBHelper {
         .db('cnap')
         .collection<MatchV5DTO>('match_v5');
       const cursor = coll.aggregate(agg);
-      const result = await cursor.toArray();
-
-      return result;
+      return await cursor.toArray();
     } catch (error) {
       logger.error(
         `Error getting MatchArchive for Summoner [${puuid}] with MongoDB: ${error}`,
@@ -214,12 +217,7 @@ export default class DBHelper {
     }
   }
 
-  async getSummoners({
-    name = '',
-    puuid = '',
-    skip = 0,
-    limit = 25,
-  }): Promise<SummonerDTO[]> {
+  async getSummoners({ name = '', puuid = '', skip = 0, limit = 25 }) {
     try {
       const filter: DynamicFilter = {};
       if (name) {
@@ -232,14 +230,13 @@ export default class DBHelper {
         `Getting Summoner data from DB [${filter?.puuid}, ${filter?.name}]`,
       );
 
-      const results = await this.mongoClient
+      return await this.mongoClient
         .db('cnap')
         .collection<SummonerDTO>('summoner')
         .find(filter)
         .skip(skip)
         .limit(limit)
         .toArray();
-      return results;
     } catch (error) {
       logger.error('Error getting Summoners with MongoDB');
       return [];
@@ -268,8 +265,10 @@ export default class DBHelper {
 
       const result = await collection.bulkWrite(bulkOps);
       logger.info(`Updated ${result.upsertedCount} summoner data`);
+      return true;
     } catch (error) {
       logger.error('Error uploading summoners to MongoDB: ', error);
+      return false;
     }
   }
 }
