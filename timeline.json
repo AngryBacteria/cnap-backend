@@ -1,0 +1,490 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/TimelineDTO",
+    "definitions": {
+        "TimelineDTO": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/Metadata"
+                },
+                "info": {
+                    "$ref": "#/definitions/Info"
+                }
+            },
+            "required": [
+                "info",
+                "metadata"
+            ],
+            "title": "TimelineDTO"
+        },
+        "Info": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "endOfGameResult": {
+                    "type": "string"
+                },
+                "frameInterval": {
+                    "type": "integer"
+                },
+                "frames": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Frame"
+                    }
+                },
+                "gameId": {
+                    "type": "integer"
+                },
+                "participants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Participant"
+                    }
+                }
+            },
+            "required": [
+                "endOfGameResult",
+                "frameInterval",
+                "frames",
+                "gameId",
+                "participants"
+            ],
+            "title": "Info"
+        },
+        "Frame": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Event"
+                    }
+                },
+                "participantFrames": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ParticipantFrame"
+                    }
+                },
+                "timestamp": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "events",
+                "participantFrames",
+                "timestamp"
+            ],
+            "title": "Frame"
+        },
+        "Event": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "realTimestamp": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
+                "type": {
+                    "$ref": "#/definitions/EventType"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "participantId": {
+                    "type": "integer"
+                },
+                "levelUpType": {
+                    "$ref": "#/definitions/LevelUpType"
+                },
+                "skillSlot": {
+                    "type": "integer"
+                },
+                "itemId": {
+                    "type": "integer"
+                },
+                "afterId": {
+                    "type": "integer"
+                },
+                "beforeId": {
+                    "type": "integer"
+                },
+                "goldGain": {
+                    "type": "integer"
+                },
+                "creatorId": {
+                    "type": "integer"
+                },
+                "wardType": {
+                    "$ref": "#/definitions/WardType"
+                },
+                "assistingParticipantIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "bounty": {
+                    "type": "integer"
+                },
+                "killStreakLength": {
+                    "type": "integer"
+                },
+                "killerId": {
+                    "type": "integer"
+                },
+                "position": {
+                    "$ref": "#/definitions/Position"
+                },
+                "shutdownBounty": {
+                    "type": "integer"
+                },
+                "victimDamageDealt": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VictimDamage"
+                    }
+                },
+                "victimDamageReceived": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VictimDamage"
+                    }
+                },
+                "victimId": {
+                    "type": "integer"
+                },
+                "killType": {
+                    "$ref": "#/definitions/KillType"
+                },
+                "killerTeamId": {
+                    "type": "integer"
+                },
+                "monsterType": {
+                    "$ref": "#/definitions/MonsterType"
+                },
+                "laneType": {
+                    "$ref": "#/definitions/LaneType"
+                },
+                "teamId": {
+                    "type": "integer"
+                },
+                "monsterSubType": {
+                    "type": "string"
+                },
+                "buildingType": {
+                    "$ref": "#/definitions/BuildingType"
+                },
+                "towerType": {
+                    "type": "string"
+                },
+                "multiKillLength": {
+                    "type": "integer"
+                },
+                "actualStartTime": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "gameId": {
+                    "type": "integer"
+                },
+                "winningTeam": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "timestamp",
+                "type"
+            ],
+            "title": "Event"
+        },
+        "Position": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "x",
+                "y"
+            ],
+            "title": "Position"
+        },
+        "VictimDamage": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "basic": {
+                    "type": "boolean"
+                },
+                "magicDamage": {
+                    "type": "integer"
+                },
+                "name": {
+                    "$ref": "#/definitions/Name"
+                },
+                "participantId": {
+                    "type": "integer"
+                },
+                "physicalDamage": {
+                    "type": "integer"
+                },
+                "spellName": {
+                    "type": "string"
+                },
+                "spellSlot": {
+                    "type": "integer"
+                },
+                "trueDamage": {
+                    "type": "integer"
+                },
+                "type": {
+                    "$ref": "#/definitions/VictimDamageDealtType"
+                }
+            },
+            "required": [
+                "basic",
+                "magicDamage",
+                "name",
+                "participantId",
+                "physicalDamage",
+                "spellName",
+                "spellSlot",
+                "trueDamage",
+                "type"
+            ],
+            "title": "VictimDamage"
+        },
+        "ParticipantFrame": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "championStats": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "currentGold": {
+                    "type": "integer"
+                },
+                "damageStats": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "goldPerSecond": {
+                    "type": "integer"
+                },
+                "jungleMinionsKilled": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "minionsKilled": {
+                    "type": "integer"
+                },
+                "participantId": {
+                    "type": "integer"
+                },
+                "position": {
+                    "$ref": "#/definitions/Position"
+                },
+                "timeEnemySpentControlled": {
+                    "type": "integer"
+                },
+                "totalGold": {
+                    "type": "integer"
+                },
+                "xp": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "championStats",
+                "currentGold",
+                "damageStats",
+                "goldPerSecond",
+                "jungleMinionsKilled",
+                "level",
+                "minionsKilled",
+                "participantId",
+                "position",
+                "timeEnemySpentControlled",
+                "totalGold",
+                "xp"
+            ],
+            "title": "ParticipantFrame"
+        },
+        "Participant": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "participantId": {
+                    "type": "integer"
+                },
+                "puuid": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "participantId",
+                "puuid"
+            ],
+            "title": "Participant"
+        },
+        "Metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "dataVersion": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "matchId": {
+                    "type": "string"
+                },
+                "participants": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "dataVersion",
+                "matchId",
+                "participants"
+            ],
+            "title": "Metadata"
+        },
+        "BuildingType": {
+            "type": "string",
+            "enum": [
+                "TOWER_BUILDING",
+                "INHIBITOR_BUILDING"
+            ],
+            "title": "BuildingType"
+        },
+        "KillType": {
+            "type": "string",
+            "enum": [
+                "KILL_FIRST_BLOOD",
+                "KILL_MULTI",
+                "KILL_ACE"
+            ],
+            "title": "KillType"
+        },
+        "LaneType": {
+            "type": "string",
+            "enum": [
+                "MID_LANE",
+                "BOT_LANE",
+                "TOP_LANE"
+            ],
+            "title": "LaneType"
+        },
+        "LevelUpType": {
+            "type": "string",
+            "enum": [
+                "NORMAL"
+            ],
+            "title": "LevelUpType"
+        },
+        "MonsterType": {
+            "type": "string",
+            "enum": [
+                "HORDE",
+                "DRAGON",
+                "BARON_NASHOR"
+            ],
+            "title": "MonsterType"
+        },
+        "EventType": {
+            "type": "string",
+            "enum": [
+                "PAUSE_END",
+                "LEVEL_UP",
+                "SKILL_LEVEL_UP",
+                "ITEM_PURCHASED",
+                "ITEM_UNDO",
+                "WARD_PLACED",
+                "ITEM_DESTROYED",
+                "CHAMPION_KILL",
+                "CHAMPION_SPECIAL_KILL",
+                "ELITE_MONSTER_KILL",
+                "TURRET_PLATE_DESTROYED",
+                "ITEM_SOLD",
+                "WARD_KILL",
+                "BUILDING_KILL",
+                "OBJECTIVE_BOUNTY_PRESTART",
+                "DRAGON_SOUL_GIVEN",
+                "GAME_END"
+            ],
+            "title": "EventType"
+        },
+        "Name": {
+            "type": "string",
+            "enum": [
+                "Garen",
+                "Orianna",
+                "Darius",
+                "TahmKench",
+                "Caitlyn",
+                "Annie",
+                "Alistar",
+                "Quinn",
+                "Vi",
+                "Syndra",
+                "SRU_OrderMinionMelee",
+                "SRU_OrderMinionRanged",
+                "SRU_ChaosMinionRanged",
+                "Turret",
+                "SRU_ChaosMinionMelee",
+                "SRU_OrderMinionSiege",
+                "SRU_Dragon_Earth",
+                "SRU_ChaosMinionSiege",
+                "SRU_KrugMiniMini",
+                "SRU_Krug",
+                "SRU_KrugMini",
+                "SRU_RazorbeakMini",
+                "SRU_Razorbeak"
+            ],
+            "title": "Name"
+        },
+        "VictimDamageDealtType": {
+            "type": "string",
+            "enum": [
+                "OTHER",
+                "MINION",
+                "TOWER",
+                "MONSTER"
+            ],
+            "title": "VictimDamageDealtType"
+        },
+        "WardType": {
+            "type": "string",
+            "enum": [
+                "YELLOW_TRINKET",
+                "UNDEFINED",
+                "SIGHT_WARD"
+            ],
+            "title": "WardType"
+        }
+    }
+}
