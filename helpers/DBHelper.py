@@ -1,13 +1,71 @@
 import asyncio
 import os
 from threading import Lock
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+from pydantic import BaseModel
 from pymongo import UpdateOne
 
 from interfaces.MatchV5DTO import MatchV5DTO
 from interfaces.SummonerDTO import SummonerDTO
+
+
+class MatchQueryFilter(BaseModel):
+    # unique
+    match_id: str = ""
+    participant_puuids: List[str] = []
+    # non unique
+    queue: int = -1
+    mode: str = ""
+    match_type: str = ""
+    game_version: str = ""
+    offset: int = 0
+    limit: int = 5
+
+
+class SummonerHistoryFilter(BaseModel):
+    # unique
+    puuid: str = ""
+    # non unique
+    queue: int = -1
+    mode: str = ""
+    match_type: str = ""
+    game_version: str = ""
+    offset: int = 0
+    limit: int = 20
+
+
+def parse_filter_to_dict(
+    filter_obj: Union[MatchQueryFilter, SummonerHistoryFilter]
+) -> Dict[str, Any]:
+    filter_dict: Dict[str, Any] = {}
+
+    # Common fields for both filter types
+    if hasattr(filter_obj, "queue") and filter_obj.queue != -1:
+        filter_dict["info.queueId"] = filter_obj.queue
+    if hasattr(filter_obj, "mode") and filter_obj.mode:
+        filter_dict["info.gameMode"] = filter_obj.mode
+    if hasattr(filter_obj, "match_type") and filter_obj.match_type:
+        filter_dict["info.gameType"] = filter_obj.match_type
+    if hasattr(filter_obj, "game_version") and filter_obj.game_version:
+        filter_dict["info.gameVersion"] = filter_obj.game_version
+
+    # Specific fields for MatchQueryFilter
+    if isinstance(filter_obj, MatchQueryFilter):
+        if filter_obj.match_id:
+            filter_dict["metadata.matchId"] = filter_obj.match_id
+        if filter_obj.participant_puuids:
+            filter_dict["metadata.participants"] = {
+                "$all": filter_obj.participant_puuids
+            }
+
+    # Specific fields for SummonerHistoryFilter
+    elif isinstance(filter_obj, SummonerHistoryFilter):
+        if filter_obj.puuid:
+            filter_dict["metadata.participants"] = {"$all": [filter_obj.puuid]}
+
+    return filter_dict
 
 
 class DBHelper:
@@ -104,65 +162,53 @@ class DBHelper:
             print("Error uploading matches to MongoDB: ", error)
             return False
 
-    async def get_matches_v5(
-        self,
-        match_id: str = "",
-        queue: int = 0,
-        mode: str = "",
-        match_type: str = "",
-        game_version: str = "",
-        participant_ids: List[str] = [],
-        offset: int = 0,
-        limit: int = 25,
-    ) -> List[MatchV5DTO]:
+    async def get_matches_v5(self, match_filter: MatchQueryFilter) -> List[MatchV5DTO]:
         try:
-            db_filter: Dict[str, Any] = {}
-            if match_id:
-                db_filter["metadata.matchId"] = match_id
-            if queue:
-                db_filter["info.queueId"] = queue
-            if mode:
-                db_filter["info.gameMode"] = mode
-            if match_type:
-                db_filter["info.gameType"] = match_type
-            if game_version:
-                db_filter["info.gameVersion"] = game_version
-            if participant_ids and len(participant_ids) > 0:
-                db_filter["metadata.participants"] = {"$in": [participant_ids]}
+            db_filter = parse_filter_to_dict(match_filter)
             print(f"Getting Match data from DB [{db_filter}]")
 
-            cursor = self.match_collection.find(db_filter, {'_id': 0}).skip(offset).limit(limit)
+            cursor = (
+                self.match_collection.find(db_filter, {"_id": 0})
+                .skip(match_filter.offset)
+                .limit(match_filter.limit)
+            )
             return await cursor.to_list(length=None)
         except Exception as error:
             print("Error getting MatchArchive with MongoDB: ", error)
             return []
 
     async def get_summoner_match_history(
-        self, puuid: str, limit: int = 20, skip: int = 0
+        self, history_filter: SummonerHistoryFilter
     ) -> List[Dict[str, Any]]:
         try:
+
+            db_filter = parse_filter_to_dict(history_filter)
+            print(f"Getting Summoner History data from DB [{db_filter}]")
             agg = [
-                {"$match": {"metadata.participants": {"$all": [puuid]}}},
+                {"$match": db_filter},
                 {"$sort": {"info.gameCreation": -1}},
-                {"$skip": skip},
-                {"$limit": limit},
+                {"$skip": history_filter.offset},
+                {"$limit": history_filter.limit},
                 {
                     "$set": {
                         "info.participants": {
                             "$filter": {
                                 "input": "$info.participants",
                                 "as": "participant",
-                                "cond": {"$eq": ["$$participant.puuid", puuid]},
+                                "cond": {
+                                    "$eq": ["$$participant.puuid", history_filter.puuid]
+                                },
                             }
                         }
                     }
                 },
+                {"$project": {"_id": 0}},
             ]
             cursor = self.match_collection.aggregate(agg)
             return await cursor.to_list(length=None)
         except Exception as error:
             print(
-                f"Error getting MatchArchive for Summoner [{puuid}] with MongoDB: {error}"
+                f"Error getting MatchArchive for Summoner [{history_filter.puuid}] History with MongoDB: {error}"
             )
             return []
 
@@ -177,7 +223,11 @@ class DBHelper:
                 db_filter["puuid"] = puuid
             print(f"Getting Summoner data from DB")
 
-            cursor = self.summoner_collection.find(db_filter, {'_id': 0}).skip(skip).limit(limit)
+            cursor = (
+                self.summoner_collection.find(db_filter, {"_id": 0})
+                .skip(skip)
+                .limit(limit)
+            )
             return await cursor.to_list(length=None)
         except Exception as error:
             print("Error getting Summoners with MongoDB: ", error)
@@ -203,6 +253,7 @@ class DBHelper:
 async def main():
     dbh = DBHelper()
     await dbh.init_indexes()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
