@@ -13,6 +13,9 @@ from helpers.Logger import app_logger
 class RiotHelper:
     _instance = None
     _lock: Lock = Lock()
+    riot_api_key: str
+    client: httpx.AsyncClient
+    limiter: Limiter
 
     def __new__(cls):
         if cls._instance is None:
@@ -54,7 +57,7 @@ class RiotHelper:
             return None
 
     async def get_match_list_riot(
-        self, summoner: Dict, count: int = 100, offset: int = 0
+            self, summoner: Dict, count: int = 100, offset: int = 0
     ) -> list[str]:
         try:
             app_logger.debug(f"Fetching Matchlist [{summoner['puuid']}] with Riot-API")

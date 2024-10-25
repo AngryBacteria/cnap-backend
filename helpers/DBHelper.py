@@ -1,8 +1,8 @@
 import asyncio
 import os
 from threading import Lock
-from typing import List, Dict, Any, Union
-from motor.motor_asyncio import AsyncIOMotorClient
+from typing import List, Dict, Any, Union, Mapping, Sequence
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pymongo import UpdateOne
@@ -70,6 +70,10 @@ def parse_filter_to_dict(
 class DBHelper:
     _instance: Any = None
     _lock: Lock = Lock()
+    mongo_client: AsyncIOMotorClient[Mapping[str, Any]]
+    database: AsyncIOMotorDatabase[Mapping[str, Any]]
+    match_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    summoner_collection: AsyncIOMotorCollection[Mapping[str, Any]]
 
     def __new__(cls) -> Any:
         if cls._instance is None:
@@ -135,7 +139,7 @@ class DBHelper:
             non_existing_ids = list(ids_set - set(existing_ids))
 
             app_logger.debug(
-                f"{len(existing_ids)} of {len(ids)} Matches were already present in the database"
+                f"{len(existing_ids)} of {len(ids_set)} Matches were already present in the database"
             )
             return non_existing_ids
         except Exception as error:
@@ -183,7 +187,7 @@ class DBHelper:
 
             db_filter = parse_filter_to_dict(history_filter)
             app_logger.debug(f"Getting Summoner History data from DB [{db_filter}]")
-            agg = [
+            agg: Sequence = [
                 {"$match": db_filter},
                 {"$sort": {"info.gameCreation": -1}},
                 {"$skip": history_filter.offset},
@@ -220,7 +224,7 @@ class DBHelper:
                 db_filter["name"] = name
             if puuid:
                 db_filter["puuid"] = puuid
-            app_logger.debug(f"Getting Summoner data from DB")
+            app_logger.debug("Getting Summoner data from DB")
 
             cursor = (
                 self.summoner_collection.find(db_filter, {"_id": 0})

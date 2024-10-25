@@ -13,7 +13,7 @@ class MainTask:
 
     async def update_match_data(self, offset=0, count=69):
         existing_summoners = await self.db_helper.get_summoners()
-        if not existing_summoners:
+        if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(
                 "No Summoner data available to update match history. Stopping the loop"
             )

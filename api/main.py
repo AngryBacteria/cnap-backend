@@ -39,7 +39,7 @@ async def get_matches(match_filter: Annotated[MatchQueryFilter, Query()]):
 
 
 @app.get("/history")
-async def get_matches(history_filter: Annotated[SummonerHistoryFilter, Query()]):
+async def get_match_history(history_filter: Annotated[SummonerHistoryFilter, Query()]):
     db_response = await dbh.get_summoner_match_history(history_filter)
     db_matches = db_response if len(db_response) > 0 else None
     if db_matches:
