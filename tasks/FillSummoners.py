@@ -1,5 +1,4 @@
 import asyncio
-from typing import List, Dict, Optional
 
 from helpers.DBHelper import DBHelper
 from helpers.RiotHelper import RiotHelper
@@ -60,7 +59,7 @@ class FillSummonersTask:
 
 async def main():
     task = FillSummonersTask()
-    await task.fill_summoners()
+    await task.fill_summoners(core_only=False)
 
 
 if __name__ == "__main__":

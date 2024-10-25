@@ -7,8 +7,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from pymongo import UpdateOne
 
-from interfaces.MatchV5DTO import MatchV5DTO
-from interfaces.SummonerDTO import SummonerDTO
+from helpers.Logger import app_logger
 
 
 class MatchQueryFilter(BaseModel):
@@ -102,22 +101,22 @@ class DBHelper:
 
     async def disconnect(self):
         self.mongo_client.close()
-        print("Disconnected from MongoDB")
+        app_logger.debug("Disconnected from MongoDB")
 
     async def init_indexes(self):
         try:
             await self.summoner_collection.create_index("puuid", unique=True)
-            print("Created index on summoner.puuid")
+            app_logger.debug("Created index on summoner.puuid")
 
             await self.match_collection.create_index("metadata.matchId", unique=True)
-            print("Created index on match_v5.metadata.matchId")
+            app_logger.debug("Created index on match_v5.metadata.matchId")
 
             await self.match_collection.create_index("metadata.participants")
-            print("Created index on match_v5.info.participants")
+            app_logger.debug("Created index on match_v5.info.participants")
 
-            print("All indexes created successfully")
+            app_logger.debug("All indexes created successfully")
         except Exception as error:
-            print(f"Error creating indexes: {error}")
+            app_logger.debug(f"Error creating indexes: {error}")
 
     async def get_non_existing_match_ids(self, ids: List[str]):
         try:
@@ -135,15 +134,15 @@ class DBHelper:
             # Use set difference to find non-existing ids
             non_existing_ids = list(ids_set - set(existing_ids))
 
-            print(
+            app_logger.debug(
                 f"{len(existing_ids)} of {len(ids)} Matches were already present in the database"
             )
             return non_existing_ids
         except Exception as error:
-            print("Could not check for existing match ids: ", error)
+            app_logger.debug("Could not check for existing match ids: ", error)
             return []
 
-    async def update_matches(self, matches: List[MatchV5DTO]):
+    async def update_matches(self, matches: List[Dict]):
         try:
             bulk_ops = [
                 UpdateOne(
@@ -154,18 +153,18 @@ class DBHelper:
                 for match in matches
             ]
             result = await self.match_collection.bulk_write(bulk_ops)
-            print(
+            app_logger.debug(
                 f"Upserted {result.upserted_count} and modified {result.modified_count} summoner data Inserted {result.inserted_count} Match data"
             )
             return True
         except Exception as error:
-            print("Error uploading matches to MongoDB: ", error)
+            app_logger.debug("Error uploading matches to MongoDB: ", error)
             return False
 
-    async def get_matches_v5(self, match_filter: MatchQueryFilter) -> List[MatchV5DTO]:
+    async def get_matches_v5(self, match_filter: MatchQueryFilter) -> List[Dict]:
         try:
             db_filter = parse_filter_to_dict(match_filter)
-            print(f"Getting Match data from DB [{db_filter}]")
+            app_logger.debug(f"Getting Match data from DB [{db_filter}]")
 
             cursor = (
                 self.match_collection.find(db_filter, {"_id": 0})
@@ -174,7 +173,7 @@ class DBHelper:
             )
             return await cursor.to_list(length=None)
         except Exception as error:
-            print("Error getting MatchArchive with MongoDB: ", error)
+            app_logger.debug("Error getting MatchArchive with MongoDB: ", error)
             return []
 
     async def get_summoner_match_history(
@@ -183,7 +182,7 @@ class DBHelper:
         try:
 
             db_filter = parse_filter_to_dict(history_filter)
-            print(f"Getting Summoner History data from DB [{db_filter}]")
+            app_logger.debug(f"Getting Summoner History data from DB [{db_filter}]")
             agg = [
                 {"$match": db_filter},
                 {"$sort": {"info.gameCreation": -1}},
@@ -207,21 +206,21 @@ class DBHelper:
             cursor = self.match_collection.aggregate(agg)
             return await cursor.to_list(length=None)
         except Exception as error:
-            print(
+            app_logger.debug(
                 f"Error getting MatchArchive for Summoner [{history_filter.puuid}] History with MongoDB: {error}"
             )
             return []
 
     async def get_summoners(
         self, name: str = "", puuid: str = "", skip: int = 0, limit: int = 25
-    ) -> List[SummonerDTO]:
+    ) -> List[Dict]:
         try:
             db_filter: Dict[str, Any] = {}
             if name:
                 db_filter["name"] = name
             if puuid:
                 db_filter["puuid"] = puuid
-            print(f"Getting Summoner data from DB")
+            app_logger.debug(f"Getting Summoner data from DB")
 
             cursor = (
                 self.summoner_collection.find(db_filter, {"_id": 0})
@@ -230,10 +229,10 @@ class DBHelper:
             )
             return await cursor.to_list(length=None)
         except Exception as error:
-            print("Error getting Summoners with MongoDB: ", error)
+            app_logger.debug("Error getting Summoners with MongoDB: ", error)
             return []
 
-    async def update_summoners(self, summoners: List[SummonerDTO]) -> bool:
+    async def update_summoners(self, summoners: List[Dict]) -> bool:
         try:
             bulk_ops = [
                 UpdateOne({"puuid": summoner["puuid"]}, {"$set": summoner}, upsert=True)
@@ -241,12 +240,12 @@ class DBHelper:
             ]
 
             result = await self.summoner_collection.bulk_write(bulk_ops)
-            print(
+            app_logger.debug(
                 f"Upserted {result.upserted_count} modified {result.modified_count} Inserted {result.inserted_count} summoner data"
             )
             return True
         except Exception as error:
-            print("Error uploading summoners to MongoDB: ", error)
+            app_logger.debug("Error uploading summoners to MongoDB: ", error)
             return False
 
 
