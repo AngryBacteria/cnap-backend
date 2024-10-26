@@ -2,7 +2,11 @@ import asyncio
 import os
 from threading import Lock
 from typing import List, Dict, Any, Union, Mapping, Sequence
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
+from motor.motor_asyncio import (
+    AsyncIOMotorClient,
+    AsyncIOMotorDatabase,
+    AsyncIOMotorCollection,
+)
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pymongo import UpdateOne
@@ -120,7 +124,7 @@ class DBHelper:
 
             app_logger.debug("All indexes created successfully")
         except Exception as error:
-            app_logger.debug(f"Error creating indexes: {error}")
+            app_logger.error(f"Error creating indexes: {error}")
 
     async def get_non_existing_match_ids(self, ids: List[str]):
         try:
@@ -143,7 +147,7 @@ class DBHelper:
             )
             return non_existing_ids
         except Exception as error:
-            app_logger.debug("Could not check for existing match ids: ", error)
+            app_logger.error("Error while checking for existing match ids: ", error)
             return []
 
     async def update_matches(self, matches: List[Dict]):
@@ -162,7 +166,7 @@ class DBHelper:
             )
             return True
         except Exception as error:
-            app_logger.debug("Error uploading matches to MongoDB: ", error)
+            app_logger.error("Error uploading matches to MongoDB: ", error)
             return False
 
     async def get_matches_v5(self, match_filter: MatchQueryFilter) -> List[Dict]:
@@ -177,7 +181,7 @@ class DBHelper:
             )
             return await cursor.to_list(length=None)
         except Exception as error:
-            app_logger.debug("Error getting MatchArchive with MongoDB: ", error)
+            app_logger.error("Error getting MatchArchive with MongoDB: ", error)
             return []
 
     async def get_summoner_match_history(
@@ -210,7 +214,7 @@ class DBHelper:
             cursor = self.match_collection.aggregate(agg)
             return await cursor.to_list(length=None)
         except Exception as error:
-            app_logger.debug(
+            app_logger.error(
                 f"Error getting MatchArchive for Summoner [{history_filter.puuid}] History with MongoDB: {error}"
             )
             return []
@@ -233,7 +237,7 @@ class DBHelper:
             )
             return await cursor.to_list(length=None)
         except Exception as error:
-            app_logger.debug("Error getting Summoners with MongoDB: ", error)
+            app_logger.error("Error getting Summoners with MongoDB: ", error)
             return []
 
     async def update_summoners(self, summoners: List[Dict]) -> bool:
@@ -249,7 +253,7 @@ class DBHelper:
             )
             return True
         except Exception as error:
-            app_logger.debug("Error uploading summoners to MongoDB: ", error)
+            app_logger.error("Error uploading summoners to MongoDB: ", error)
             return False
 
 

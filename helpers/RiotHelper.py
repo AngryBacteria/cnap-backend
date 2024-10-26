@@ -51,21 +51,21 @@ class RiotHelper:
             data = await self._make_request(url)
             return data
         except Exception as e:
-            app_logger.debug(
+            app_logger.error(
                 f"Error while fetching Match [{match_id}] with Riot-API: {e}"
             )
             return None
 
     async def get_match_list_riot(
-            self, summoner: Dict, count: int = 100, offset: int = 0
+        self, summoner: Dict, count: int = 95, offset: int = 0
     ) -> list[str]:
         try:
             app_logger.debug(f"Fetching Matchlist [{summoner['puuid']}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{summoner['puuid']}/ids?start={offset}&count={count}"
             return await self._make_request(url)
         except Exception as e:
-            app_logger.debug(
-                f"Error while fetching Matchlist of Summoner [{summoner['puuid']}] with Riot-API: {e}"
+            app_logger.error(
+                f"Error while fetching Matchlist [count={count}, offset={offset}] of Summoner [{summoner['puuid']}] with Riot-API: {e}"
             )
             return []
 
@@ -76,7 +76,7 @@ class RiotHelper:
             data = await self._make_request(url)
             return data
         except Exception as e:
-            app_logger.debug(
+            app_logger.error(
                 f"Error while fetching Summoner [{puuid}] with Riot-API: {e}"
             )
             return None
@@ -89,7 +89,7 @@ class RiotHelper:
             data = await self._make_request(url)
             return data
         except Exception as e:
-            app_logger.debug(
+            app_logger.error(
                 f"Error while fetching Account [{name} - {tag}] with Riot-API: {e}"
             )
             return None
@@ -113,7 +113,7 @@ class RiotHelper:
             data = await self._make_request(url)
             return [champion for champion in data]
         except Exception as e:
-            app_logger.debug(
+            app_logger.error(
                 f"Error while fetching Champion Mastery for Summoner [{puuid}] with Riot-API: {e}"
             )
             return []

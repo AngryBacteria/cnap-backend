@@ -11,7 +11,7 @@ class MainTask:
         self.db_helper = DBHelper()
         self.riot_helper = RiotHelper()
 
-    async def update_match_data(self, offset=0, count=69):
+    async def update_match_data(self, count=69, offset=0):
         existing_summoners = await self.db_helper.get_summoners()
         if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(
@@ -52,7 +52,7 @@ class MainTask:
     async def fill_match_data(self):
         for i in range(0, 2000, 95):
             app_logger.debug(f"INSERTING WITH I = {i}")
-            await self.update_match_data(i, 95)
+            await self.update_match_data(95, i)
 
     async def interval_update(self, iteration, interval_time):
         app_logger.debug(
@@ -64,18 +64,17 @@ class MainTask:
             await self.update_summoner_data()
             iteration = 0
             app_logger.debug(f"UPDATED SUMMONER DATA: {datetime.now().isoformat()}")
-        await self.update_match_data(0, 69)
+        await self.update_match_data(69, 0)
         app_logger.debug(
             f"UPDATED MATCH DATA [{iteration}]: {datetime.now().isoformat()}"
         )
-        await asyncio.sleep(interval_time / 1000)  # Convert milliseconds to seconds
+        await asyncio.sleep(interval_time)
         await self.interval_update(iteration, interval_time)
 
 
 async def main():
     task = MainTask()
-    # await task.update_match_data(0, 2)
-    await task.fill_match_data()
+    await task.interval_update(0, 60*60)
 
 
 if __name__ == "__main__":
