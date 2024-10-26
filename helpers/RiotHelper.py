@@ -60,7 +60,7 @@ class RiotHelper:
         self, summoner: Dict, count: int = 95, offset: int = 0
     ) -> list[str]:
         try:
-            app_logger.debug(f"Fetching Matchlist [{summoner['puuid']}] with Riot-API")
+            app_logger.debug(f"Fetching Matchlist [count={count}, offset={offset}] [{summoner['puuid']}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{summoner['puuid']}/ids?start={offset}&count={count}"
             return await self._make_request(url)
         except Exception as e:
