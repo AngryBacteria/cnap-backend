@@ -56,11 +56,25 @@ class RiotHelper:
             )
             return None
 
+    async def get_timeline_riot(self, timeline_id: str) -> Optional[Dict]:
+        try:
+            app_logger.debug(f"Fetching Timeline [{timeline_id}] with Riot-API")
+            url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{timeline_id}/timeline"
+            data = await self._make_request(url)
+            return data
+        except Exception as e:
+            app_logger.error(
+                f"Error while fetching Timeline [{timeline_id}] with Riot-API: {e}"
+            )
+            return None
+
     async def get_match_list_riot(
         self, summoner: Dict, count: int = 95, offset: int = 0
     ) -> list[str]:
         try:
-            app_logger.debug(f"Fetching Matchlist [count={count}, offset={offset}] [{summoner['puuid']}] with Riot-API")
+            app_logger.debug(
+                f"Fetching Matchlist [count={count}, offset={offset}] [{summoner['puuid']}] with Riot-API"
+            )
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{summoner['puuid']}/ids?start={offset}&count={count}"
             return await self._make_request(url)
         except Exception as e:

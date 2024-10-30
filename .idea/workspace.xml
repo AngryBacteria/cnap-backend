@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="" />
+    <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/DBHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DBHelper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/RiotHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/RiotHelper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/PeriodicUpdates.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/PeriodicUpdates.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,6 +29,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.PeriodicUpdates.executor&quot;: &quot;Run&quot;,
     &quot;Python.RiotHelper.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;mongodb-python&quot;,
@@ -36,7 +42,30 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.PeriodicUpdates">
+    <configuration name="PeriodicUpdates" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="cnap-backend" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tasks" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tasks/PeriodicUpdates.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="RiotHelper" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="cnap-backend" />
       <option name="ENV_FILES" value="" />
@@ -62,6 +91,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.PeriodicUpdates" />
         <item itemvalue="Python.RiotHelper" />
       </list>
     </recent_temporary>
@@ -85,6 +115,10 @@
       <workItem from="1729881276377" duration="203000" />
       <workItem from="1729881715974" duration="8000" />
       <workItem from="1729930386566" duration="852000" />
+      <workItem from="1729931424395" duration="265000" />
+      <workItem from="1729938577080" duration="12000" />
+      <workItem from="1729977273646" duration="31000" />
+      <workItem from="1730298597317" duration="2358000" />
     </task>
     <servers />
   </component>
@@ -93,5 +127,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/cnap_backend$RiotHelper.coverage" NAME="RiotHelper Coverage Results" MODIFIED="1729881309050" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/helpers" />
+    <SUITE FILE_PATH="coverage/cnap_backend$PeriodicUpdates.coverage" NAME="PeriodicUpdates Coverage Results" MODIFIED="1729931651843" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tasks" />
   </component>
 </project>

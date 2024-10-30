@@ -10,6 +10,7 @@ from motor.motor_asyncio import (
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pymongo import UpdateOne
+from pymongo.results import BulkWriteResult
 
 from helpers.Logger import app_logger
 
@@ -78,6 +79,7 @@ class DBHelper:
     database: AsyncIOMotorDatabase[Mapping[str, Any]]
     match_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     summoner_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    timeline_collection: AsyncIOMotorCollection[Mapping[str, Any]]
 
     def __new__(cls) -> Any:
         if cls._instance is None:
@@ -101,6 +103,9 @@ class DBHelper:
                         cls._instance.summoner_collection = (
                             cls._instance.database.get_collection("summoner")
                         )
+                        cls._instance.timeline_collection = (
+                            cls._instance.database.get_collection("timeline_v5")
+                        )
                     else:
                         raise ValueError(
                             "No MongoDB Connection String found in Environment"
@@ -119,54 +124,74 @@ class DBHelper:
             await self.match_collection.create_index("metadata.matchId", unique=True)
             app_logger.debug("Created index on match_v5.metadata.matchId")
 
-            await self.match_collection.create_index("metadata.participants")
-            app_logger.debug("Created index on match_v5.info.participants")
-
             app_logger.debug("All indexes created successfully")
         except Exception as error:
             app_logger.error(f"Error creating indexes: {error}")
 
-    async def get_non_existing_match_ids(self, ids: List[str]):
+    async def get_non_existing_ids(
+        self,
+        ids: List[str],
+        entity_name: str = Union["MatchV5", "TimelineV5"],
+        id_field: str = "metadata.matchId",
+    ) -> List[str]:
         try:
             if not ids:
                 return []
 
-            # Convert input ids to a set for faster lookup
             ids_set = set(ids)
+            if entity_name == "MatchV5":
+                existing_ids = await self.match_collection.distinct(
+                    id_field, {id_field: {"$in": list(ids_set)}}
+                )
+            elif entity_name == "TimelineV5":
+                existing_ids = await self.timeline_collection.distinct(
+                    id_field, {id_field: {"$in": list(ids_set)}}
+                )
+            else:
+                raise ValueError(f"Invalid entity name: {entity_name}")
 
-            # Use distinct() to get only unique matchIds that exist in the database
-            existing_ids = await self.match_collection.distinct(
-                "metadata.matchId", {"metadata.matchId": {"$in": list(ids_set)}}
-            )
-
-            # Use set difference to find non-existing ids
             non_existing_ids = list(ids_set - set(existing_ids))
-
             app_logger.debug(
-                f"{len(existing_ids)} of {len(ids_set)} Matches were already present in the database"
+                f"{len(existing_ids)} of {len(ids_set)} {entity_name} were already present in the database"
             )
             return non_existing_ids
+
         except Exception as error:
-            app_logger.error("Error while checking for existing match ids: ", error)
+            app_logger.error(
+                f"Error while checking for existing {entity_name.lower()} ids: {error}"
+            )
             return []
 
-    async def update_matches(self, matches: List[Dict]):
+    async def update_documents(
+        self,
+        documents: List[Dict],
+        entity_name: str = Union["MatchV5", "TimelineV5"],
+        id_field: str = "metadata.matchId",
+    ) -> bool:
         try:
             bulk_ops = [
                 UpdateOne(
-                    {"metadata.matchId": match["metadata"]["matchId"]},
-                    {"$set": match},
-                    upsert=True,
+                    {id_field: doc["metadata"]["matchId"]}, {"$set": doc}, upsert=True
                 )
-                for match in matches
+                for doc in documents
             ]
-            result = await self.match_collection.bulk_write(bulk_ops)
+
+            result: BulkWriteResult
+            if entity_name == "MatchV5":
+                result = await self.match_collection.bulk_write(bulk_ops)
+            elif entity_name == "TimelineV5":
+                result = await self.timeline_collection.bulk_write(bulk_ops)
+            else:
+                raise ValueError(f"Invalid entity name: {entity_name}")
+
             app_logger.debug(
-                f"Upserted {result.upserted_count} and modified {result.modified_count} summoner data Inserted {result.inserted_count} Match data"
+                f"Upserted {result.upserted_count}, modified {result.modified_count} "
+                f"and inserted {result.inserted_count} {entity_name} data"
             )
             return True
+
         except Exception as error:
-            app_logger.error("Error uploading matches to MongoDB: ", error)
+            app_logger.error(f"Error uploading {entity_name} to MongoDB: {error}")
             return False
 
     async def get_matches_v5(self, match_filter: MatchQueryFilter) -> List[Dict]:

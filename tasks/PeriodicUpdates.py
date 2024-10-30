@@ -24,18 +24,35 @@ class MainTask:
             riot_match_ids = await self.riot_helper.get_match_list_riot(
                 summoner, count, offset
             )
-            filtered_ids = await self.db_helper.get_non_existing_match_ids(
-                riot_match_ids
+            filtered_match_ids = await self.db_helper.get_non_existing_ids(
+                riot_match_ids, "MatchV5", "metadata.matchId"
             )
-            if len(filtered_ids) == 0:
+            filtered_timeline_ids = await self.db_helper.get_non_existing_ids(
+                riot_match_ids, "TimelineV5", "metadata.matchId"
+            )
+
+            if len(filtered_match_ids) == 0:
                 app_logger.debug(f"No new matches for summoner [{summoner['puuid']}]")
-            else:
-                match_data = []
-                for match_id in filtered_ids:
-                    match = await self.riot_helper.get_match_riot(match_id)
-                    if match:
-                        match_data.append(match)
-                await self.db_helper.update_matches(match_data)
+            if len(filtered_timeline_ids) == 0:
+                app_logger.debug(f"No new timelines for summoner [{summoner['puuid']}]")
+
+            match_data = []
+            for match_id in filtered_match_ids:
+                match = await self.riot_helper.get_match_riot(match_id)
+                if match:
+                    match_data.append(match)
+            await self.db_helper.update_documents(
+                match_data, "MatchV5", "metadata.matchId"
+            )
+
+            timeline_data = []
+            for timeline_id in filtered_timeline_ids:
+                timeline = await self.riot_helper.get_timeline_riot(timeline_id)
+                if timeline:
+                    timeline_data.append(timeline)
+            await self.db_helper.update_documents(
+                timeline_data, "TimelineV5", "metadata.matchId"
+            )
 
     async def update_summoner_data(self):
         existing_summoners = await self.db_helper.get_summoners()
@@ -74,7 +91,7 @@ class MainTask:
 
 async def main():
     task = MainTask()
-    await task.interval_update(0, 60*60)
+    await task.interval_update(0, 60 * 60)
 
 
 if __name__ == "__main__":
