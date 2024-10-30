@@ -41,18 +41,20 @@ class MainTask:
                 match = await self.riot_helper.get_match_riot(match_id)
                 if match:
                     match_data.append(match)
-            await self.db_helper.update_documents(
-                match_data, "MatchV5", "metadata.matchId"
-            )
+            if match_data and len(match_data) > 0:
+                await self.db_helper.update_documents(
+                    match_data, "MatchV5", "metadata.matchId"
+                )
 
             timeline_data = []
             for timeline_id in filtered_timeline_ids:
                 timeline = await self.riot_helper.get_timeline_riot(timeline_id)
                 if timeline:
                     timeline_data.append(timeline)
-            await self.db_helper.update_documents(
-                timeline_data, "TimelineV5", "metadata.matchId"
-            )
+            if timeline_data and len(timeline_data) > 0:
+                await self.db_helper.update_documents(
+                    timeline_data, "TimelineV5", "metadata.matchId"
+                )
 
     async def update_summoner_data(self):
         existing_summoners = await self.db_helper.get_summoners()

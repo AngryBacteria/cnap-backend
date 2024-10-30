@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/DBHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DBHelper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/RiotHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/RiotHelper.py" afterDir="false" />
+    <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="added timeline">
       <change beforePath="$PROJECT_DIR$/tasks/PeriodicUpdates.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/PeriodicUpdates.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -118,12 +115,25 @@
       <workItem from="1729931424395" duration="265000" />
       <workItem from="1729938577080" duration="12000" />
       <workItem from="1729977273646" duration="31000" />
-      <workItem from="1730298597317" duration="2358000" />
+      <workItem from="1730298597317" duration="2701000" />
     </task>
+    <task id="LOCAL-00001" summary="added timeline">
+      <option name="closed" value="true" />
+      <created>1730301258208</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1730301258209</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="added timeline" />
+    <option name="LAST_COMMIT_MESSAGE" value="added timeline" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/cnap_backend$RiotHelper.coverage" NAME="RiotHelper Coverage Results" MODIFIED="1729881309050" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/helpers" />
