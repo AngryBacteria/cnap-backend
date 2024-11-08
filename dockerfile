@@ -20,6 +20,9 @@ RUN chmod +x entrypoint.sh
 # Expose the port the app runs on
 EXPOSE 8000
 
+# Add the current directory to PYTHONPATH
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+
 # Set a default value for RUN_TYPE
 ENV RUN_TYPE=server
 

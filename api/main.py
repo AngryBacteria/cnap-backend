@@ -63,3 +63,8 @@ async def get_summoners(summoner_filter: Annotated[SummonerFilter, Query()]):
         return db_summoners
     else:
         raise HTTPException(status_code=404, detail="No summoners found")
+
+
+@app.get("/")
+async def read_main():
+    return {"msg": "Hello World"}

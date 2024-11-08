@@ -1,7 +1,7 @@
 import asyncio
 import os
 from threading import Lock
-from typing import List, Dict, Any, Union, Mapping, Sequence, Literal
+from typing import List, Dict, Any, Union, Mapping, Sequence, Literal, Optional
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import (
@@ -18,36 +18,36 @@ from helpers.Logger import app_logger
 
 class MatchQueryFilter(BaseModel):
     # unique
-    participant_puuids: List[str] = []
+    participant_puuids: Optional[List[str]] = []
     # non unique
-    match_ids: List[str] = []
-    queue: int = -1
-    mode: str = ""
-    match_type: str = ""
-    game_version: str = ""
-    offset: int = 0
-    limit: int = 5
+    match_ids: Optional[List[str]] = []
+    queue: Optional[int] = -1
+    mode: Optional[str] = ""
+    match_type: Optional[str] = ""
+    game_version: Optional[str] = ""
+    offset: Optional[int] = 0
+    limit: Optional[int] = 5
 
 
 class SummonerHistoryFilter(BaseModel):
     # unique
-    puuid: str = ""
+    puuid: Optional[str] = ""
     # non unique
-    match_ids: List[str] = []
-    queue: int = -1
-    mode: str = ""
-    match_type: str = ""
-    game_version: str = ""
-    offset: int = 0
-    limit: int = 20
+    match_ids: Optional[List[str]] = []
+    queue: Optional[int] = -1
+    mode: Optional[str] = ""
+    match_type: Optional[str] = ""
+    game_version: Optional[str] = ""
+    offset: Optional[int] = 0
+    limit: Optional[int] = 20
 
 
 class SummonerFilter(BaseModel):
-    game_name: str = ""
-    puuid: str = ""
-    accountId: str = ""
-    summonerLevel: int = -1
-    tagLine: str = ""
+    game_name: Optional[str] = ""
+    puuid: Optional[str] = ""
+    accountId: Optional[str] = ""
+    summonerLevel: Optional[int] = -1
+    tagLine: Optional[str] = ""
 
 
 def parse_filter_to_dict(

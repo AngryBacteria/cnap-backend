@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 
-from helpers.DBHelper import DBHelper
+from helpers.DBHelper import DBHelper, SummonerFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 
@@ -12,7 +12,7 @@ class MainTask:
         self.riot_helper = RiotHelper()
 
     async def update_match_data(self, count=69, offset=0):
-        existing_summoners = await self.db_helper.get_summoners()
+        existing_summoners = await self.db_helper.get_summoners(SummonerFilter())
         if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(
                 "No Summoner data available to update match history. Stopping the loop"
@@ -57,7 +57,7 @@ class MainTask:
                 )
 
     async def update_summoner_data(self):
-        existing_summoners = await self.db_helper.get_summoners()
+        existing_summoners = await self.db_helper.get_summoners(SummonerFilter())
         if existing_summoners:
             new_summoners = []
             for summoner in existing_summoners:
