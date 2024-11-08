@@ -2,7 +2,12 @@ from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query
 
-from helpers.DBHelper import DBHelper, MatchQueryFilter, SummonerHistoryFilter
+from helpers.DBHelper import (
+    DBHelper,
+    MatchQueryFilter,
+    SummonerHistoryFilter,
+    SummonerFilter,
+)
 from helpers.RiotHelper import RiotHelper
 
 dbh = DBHelper()
@@ -48,3 +53,13 @@ async def get_match_history(history_filter: Annotated[SummonerHistoryFilter, Que
         raise HTTPException(
             status_code=404, detail="No summoner history found that match the filter"
         )
+
+
+@app.get("/summoners")
+async def get_summoners(summoner_filter: Annotated[SummonerFilter, Query()]):
+    db_response = await dbh.get_summoners(summoner_filter)
+    db_summoners = db_response if len(db_response) > 0 else None
+    if db_summoners:
+        return db_summoners
+    else:
+        raise HTTPException(status_code=404, detail="No summoners found")

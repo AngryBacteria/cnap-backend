@@ -42,7 +42,7 @@ class MainTask:
                 if match:
                     match_data.append(match)
             if match_data and len(match_data) > 0:
-                await self.db_helper.update_documents(
+                await self.db_helper.update_matches(
                     match_data, "MatchV5", "metadata.matchId"
                 )
 
@@ -52,7 +52,7 @@ class MainTask:
                 if timeline:
                     timeline_data.append(timeline)
             if timeline_data and len(timeline_data) > 0:
-                await self.db_helper.update_documents(
+                await self.db_helper.update_matches(
                     timeline_data, "TimelineV5", "metadata.matchId"
                 )
 

@@ -1,13 +1,14 @@
 import asyncio
 import os
 from threading import Lock
-from typing import List, Dict, Any, Union, Mapping, Sequence
+from typing import List, Dict, Any, Union, Mapping, Sequence, Literal
+
+from dotenv import load_dotenv
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
     AsyncIOMotorDatabase,
     AsyncIOMotorCollection,
 )
-from dotenv import load_dotenv
 from pydantic import BaseModel
 from pymongo import UpdateOne
 from pymongo.results import BulkWriteResult
@@ -17,9 +18,9 @@ from helpers.Logger import app_logger
 
 class MatchQueryFilter(BaseModel):
     # unique
-    match_id: str = ""
     participant_puuids: List[str] = []
     # non unique
+    match_ids: List[str] = []
     queue: int = -1
     mode: str = ""
     match_type: str = ""
@@ -32,6 +33,7 @@ class SummonerHistoryFilter(BaseModel):
     # unique
     puuid: str = ""
     # non unique
+    match_ids: List[str] = []
     queue: int = -1
     mode: str = ""
     match_type: str = ""
@@ -40,34 +42,41 @@ class SummonerHistoryFilter(BaseModel):
     limit: int = 20
 
 
+class SummonerFilter(BaseModel):
+    game_name: str = ""
+    puuid: str = ""
+    accountId: str = ""
+    summonerLevel: int = -1
+    tagLine: str = ""
+
+
 def parse_filter_to_dict(
     filter_obj: Union[MatchQueryFilter, SummonerHistoryFilter]
 ) -> Dict[str, Any]:
     filter_dict: Dict[str, Any] = {}
 
     # Common fields for both filter types
-    if hasattr(filter_obj, "queue") and filter_obj.queue != -1:
+    if filter_obj.queue != -1:
         filter_dict["info.queueId"] = filter_obj.queue
-    if hasattr(filter_obj, "mode") and filter_obj.mode:
+    if len(filter_obj.mode) > 0:
         filter_dict["info.gameMode"] = filter_obj.mode
-    if hasattr(filter_obj, "match_type") and filter_obj.match_type:
+    if len(filter_obj.match_type) > 0:
         filter_dict["info.gameType"] = filter_obj.match_type
-    if hasattr(filter_obj, "game_version") and filter_obj.game_version:
+    if len(filter_obj.game_version) > 0:
         filter_dict["info.gameVersion"] = filter_obj.game_version
+    if len(filter_obj.match_ids):
+        filter_dict["metadata.matchId"] = {"$in": filter_obj.match_ids}
 
     # Specific fields for MatchQueryFilter
     if isinstance(filter_obj, MatchQueryFilter):
-        if filter_obj.match_id:
-            filter_dict["metadata.matchId"] = filter_obj.match_id
         if filter_obj.participant_puuids:
             filter_dict["metadata.participants"] = {
                 "$all": filter_obj.participant_puuids
             }
-
     # Specific fields for SummonerHistoryFilter
     elif isinstance(filter_obj, SummonerHistoryFilter):
         if filter_obj.puuid:
-            filter_dict["metadata.participants"] = {"$all": [filter_obj.puuid]}
+            filter_dict["metadata.participants"] = filter_obj.puuid
 
     return filter_dict
 
@@ -124,6 +133,9 @@ class DBHelper:
             await self.match_collection.create_index("metadata.matchId", unique=True)
             app_logger.debug("Created index on match_v5.metadata.matchId")
 
+            await self.match_collection.create_index("info.gameCreation", unique=False)
+            app_logger.debug("Created index on match_v5.info.gameCreation")
+
             app_logger.debug("All indexes created successfully")
         except Exception as error:
             app_logger.error(f"Error creating indexes: {error}")
@@ -131,7 +143,7 @@ class DBHelper:
     async def get_non_existing_ids(
         self,
         ids: List[str],
-        entity_name: str = Union["MatchV5", "TimelineV5"],
+        entity_name: str = Literal["MatchV5", "TimelineV5"],
         id_field: str = "metadata.matchId",
     ) -> List[str]:
         try:
@@ -162,10 +174,10 @@ class DBHelper:
             )
             return []
 
-    async def update_documents(
+    async def update_matches(
         self,
         documents: List[Dict],
-        entity_name: str = Union["MatchV5", "TimelineV5"],
+        entity_name: str = Literal["MatchV5", "TimelineV5"],
         id_field: str = "metadata.matchId",
     ) -> bool:
         try:
@@ -244,22 +256,29 @@ class DBHelper:
             )
             return []
 
-    async def get_summoners(
-        self, name: str = "", puuid: str = "", skip: int = 0, limit: int = 25
-    ) -> List[Dict]:
+    async def get_summoners(self, summoner_filter: SummonerFilter) -> List[Dict]:
         try:
             db_filter: Dict[str, Any] = {}
-            if name:
-                db_filter["name"] = name
-            if puuid:
-                db_filter["puuid"] = puuid
+            if len(summoner_filter.game_name) > 0:
+                db_filter["gameName"] = {
+                    "$regex": summoner_filter.game_name,
+                    "$options": "i",
+                }
+            if len(summoner_filter.tagLine) > 0:
+                db_filter["tagLine"] = {
+                    "$regex": summoner_filter.tagLine,
+                    "$options": "i",
+                }
+            if len(summoner_filter.puuid) > 0:
+                db_filter["puuid"] = summoner_filter.puuid
+            if len(summoner_filter.accountId) > 0:
+                db_filter["accountId"] = summoner_filter.accountId
+            if summoner_filter.summonerLevel != -1:
+                db_filter["summonerLevel"] = summoner_filter.summonerLevel
+
             app_logger.debug("Getting Summoner data from DB")
 
-            cursor = (
-                self.summoner_collection.find(db_filter, {"_id": 0})
-                .skip(skip)
-                .limit(limit)
-            )
+            cursor = self.summoner_collection.find(db_filter, {"_id": 0})
             return await cursor.to_list(length=None)
         except Exception as error:
             app_logger.error("Error getting Summoners with MongoDB: ", error)

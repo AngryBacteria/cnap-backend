@@ -22,5 +22,5 @@ console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(formatter)
 
 # Add handlers to logger
-app_logger.addHandler(file_handler)
+# app_logger.addHandler(file_handler) we do not need this in docker operation
 app_logger.addHandler(console_handler)
