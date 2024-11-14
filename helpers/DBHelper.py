@@ -14,69 +14,42 @@ from pymongo import UpdateOne
 from pymongo.results import BulkWriteResult
 
 from helpers.Logger import app_logger
+from models.ChampionDataDTO import ChampionDataDTO
+from models.SummonerDTO import SummonerDTO
 
 
-class MatchQueryFilter(BaseModel):
-    # unique
-    participant_puuids: Optional[List[str]] = []
-    # non unique
-    match_ids: Optional[List[str]] = []
-    queue: Optional[int] = -1
-    mode: Optional[str] = ""
-    match_type: Optional[str] = ""
-    game_version: Optional[str] = ""
-    offset: Optional[int] = 0
-    limit: Optional[int] = 5
-
-
-class SummonerHistoryFilter(BaseModel):
-    # unique
-    puuid: Optional[str] = ""
-    # non unique
-    match_ids: Optional[List[str]] = []
-    queue: Optional[int] = -1
-    mode: Optional[str] = ""
-    match_type: Optional[str] = ""
-    game_version: Optional[str] = ""
+class BaseFilter(BaseModel):
     offset: Optional[int] = 0
     limit: Optional[int] = 20
 
 
-class SummonerFilter(BaseModel):
-    game_name: Optional[str] = ""
+class BaseMatchFilter(BaseFilter):
+    participant_puuids: Optional[List[str]] = []
+    match_ids: Optional[List[str]] = []
+    queue: Optional[int] = -1
+    mode: Optional[str] = ""
+    match_type: Optional[str] = ""
+
+
+class SummonerFilter(BaseFilter):
     puuid: Optional[str] = ""
     accountId: Optional[str] = ""
     summonerLevel: Optional[int] = -1
-    tagLine: Optional[str] = ""
 
 
-def parse_filter_to_dict(
-    filter_obj: Union[MatchQueryFilter, SummonerHistoryFilter]
-) -> Dict[str, Any]:
+def parse_match_timeline_filter(filter_obj: BaseMatchFilter) -> Dict[str, Any]:
     filter_dict: Dict[str, Any] = {}
 
-    # Common fields for both filter types
+    if filter_obj.participant_puuids:
+        filter_dict["metadata.participants"] = {"$all": filter_obj.participant_puuids}
+    if len(filter_obj.match_ids):
+        filter_dict["metadata.matchId"] = {"$in": filter_obj.match_ids}
     if filter_obj.queue != -1:
         filter_dict["info.queueId"] = filter_obj.queue
     if len(filter_obj.mode) > 0:
         filter_dict["info.gameMode"] = filter_obj.mode
     if len(filter_obj.match_type) > 0:
         filter_dict["info.gameType"] = filter_obj.match_type
-    if len(filter_obj.game_version) > 0:
-        filter_dict["info.gameVersion"] = filter_obj.game_version
-    if len(filter_obj.match_ids):
-        filter_dict["metadata.matchId"] = {"$in": filter_obj.match_ids}
-
-    # Specific fields for MatchQueryFilter
-    if isinstance(filter_obj, MatchQueryFilter):
-        if filter_obj.participant_puuids:
-            filter_dict["metadata.participants"] = {
-                "$all": filter_obj.participant_puuids
-            }
-    # Specific fields for SummonerHistoryFilter
-    elif isinstance(filter_obj, SummonerHistoryFilter):
-        if filter_obj.puuid:
-            filter_dict["metadata.participants"] = filter_obj.puuid
 
     return filter_dict
 
@@ -89,6 +62,7 @@ class DBHelper:
     match_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     summoner_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     timeline_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    champion_collection: AsyncIOMotorCollection[Mapping[str, Any]]
 
     def __new__(cls) -> Any:
         if cls._instance is None:
@@ -115,6 +89,10 @@ class DBHelper:
                         cls._instance.timeline_collection = (
                             cls._instance.database.get_collection("timeline_v5")
                         )
+                        cls._instance.champion_collection = (
+                            cls._instance.database.get_collection("champion")
+                        )
+
                     else:
                         raise ValueError(
                             "No MongoDB Connection String found in Environment"
@@ -174,7 +152,7 @@ class DBHelper:
             )
             return []
 
-    async def update_matches(
+    async def update_match_timeline(
         self,
         documents: List[Dict],
         entity_name: str = Literal["MatchV5", "TimelineV5"],
@@ -206,13 +184,14 @@ class DBHelper:
             app_logger.error(f"Error uploading {entity_name} to MongoDB: {error}")
             return False
 
-    async def get_matches_v5(self, match_filter: MatchQueryFilter) -> List[Dict]:
+    async def get_matches_v5(self, match_filter: BaseMatchFilter) -> List[Dict]:
         try:
-            db_filter = parse_filter_to_dict(match_filter)
+            db_filter = parse_match_timeline_filter(match_filter)
             app_logger.debug(f"Getting Match data from DB [{db_filter}]")
 
             cursor = (
                 self.match_collection.find(db_filter, {"_id": 0})
+                .sort("info.gameCreation", -1)
                 .skip(match_filter.offset)
                 .limit(match_filter.limit)
             )
@@ -222,11 +201,11 @@ class DBHelper:
             return []
 
     async def get_summoner_match_history(
-        self, history_filter: SummonerHistoryFilter
+        self, history_filter: BaseMatchFilter
     ) -> List[Dict[str, Any]]:
         try:
 
-            db_filter = parse_filter_to_dict(history_filter)
+            db_filter = parse_match_timeline_filter(history_filter)
             app_logger.debug(f"Getting Summoner History data from DB [{db_filter}]")
             agg: Sequence = [
                 {"$match": db_filter},
@@ -240,7 +219,12 @@ class DBHelper:
                                 "input": "$info.participants",
                                 "as": "participant",
                                 "cond": {
-                                    "$eq": ["$$participant.puuid", history_filter.puuid]
+                                    "$all": [
+                                        [
+                                            "$$participant.puuid",
+                                            history_filter.participant_puuids,
+                                        ]
+                                    ]
                                 },
                             }
                         }
@@ -252,23 +236,14 @@ class DBHelper:
             return await cursor.to_list(length=None)
         except Exception as error:
             app_logger.error(
-                f"Error getting MatchArchive for Summoner [{history_filter.puuid}] History with MongoDB: {error}"
+                f"Error getting MatchArchive for Summoner [{history_filter.participant_puuids}] History with MongoDB: {error}"
             )
             return []
 
-    async def get_summoners(self, summoner_filter: SummonerFilter) -> List[Dict]:
+    async def get_summoners(self, summoner_filter: SummonerFilter) -> List[SummonerDTO]:
         try:
             db_filter: Dict[str, Any] = {}
-            if len(summoner_filter.game_name) > 0:
-                db_filter["gameName"] = {
-                    "$regex": summoner_filter.game_name,
-                    "$options": "i",
-                }
-            if len(summoner_filter.tagLine) > 0:
-                db_filter["tagLine"] = {
-                    "$regex": summoner_filter.tagLine,
-                    "$options": "i",
-                }
+
             if len(summoner_filter.puuid) > 0:
                 db_filter["puuid"] = summoner_filter.puuid
             if len(summoner_filter.accountId) > 0:
@@ -278,16 +253,25 @@ class DBHelper:
 
             app_logger.debug("Getting Summoner data from DB")
 
-            cursor = self.summoner_collection.find(db_filter, {"_id": 0})
-            return await cursor.to_list(length=None)
+            cursor = (
+                self.summoner_collection.find(db_filter, {"_id": 0})
+                .skip(summoner_filter.offset)
+                .limit(summoner_filter.limit)
+            )
+            summoners_raw = await cursor.to_list(length=None)
+            return [SummonerDTO.model_validate(summoner) for summoner in summoners_raw]
         except Exception as error:
             app_logger.error("Error getting Summoners with MongoDB: ", error)
             return []
 
-    async def update_summoners(self, summoners: List[Dict]) -> bool:
+    async def update_summoners(self, summoners: List[SummonerDTO]) -> bool:
         try:
             bulk_ops = [
-                UpdateOne({"puuid": summoner["puuid"]}, {"$set": summoner}, upsert=True)
+                UpdateOne(
+                    {"puuid": summoner.puuid},
+                    {"$set": summoner.model_dump()},
+                    upsert=True,
+                )
                 for summoner in summoners
             ]
 
@@ -298,6 +282,24 @@ class DBHelper:
             return True
         except Exception as error:
             app_logger.error("Error uploading summoners to MongoDB: ", error)
+            return False
+
+    async def insert_champion_data(self, champions: List[ChampionDataDTO]) -> bool:
+        try:
+            bulk_ops = [
+                UpdateOne(
+                    {"id": champion.id}, {"$set": champion.model_dump()}, upsert=True
+                )
+                for champion in champions
+            ]
+
+            result = await self.champion_collection.bulk_write(bulk_ops)
+            app_logger.debug(
+                f"Upserted {result.upserted_count} modified {result.modified_count} Inserted {result.inserted_count} champion data"
+            )
+            return True
+        except Exception as error:
+            app_logger.error("Error uploading champions to MongoDB: ", error)
             return False
 
 

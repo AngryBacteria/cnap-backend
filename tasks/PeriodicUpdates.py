@@ -20,7 +20,6 @@ class MainTask:
             return
 
         for summoner in existing_summoners:
-            app_logger.debug(f"Updating Match Data for Summoner [{summoner['puuid']}]")
             riot_match_ids = await self.riot_helper.get_match_list_riot(
                 summoner, count, offset
             )
@@ -31,18 +30,13 @@ class MainTask:
                 riot_match_ids, "TimelineV5", "metadata.matchId"
             )
 
-            if len(filtered_match_ids) == 0:
-                app_logger.debug(f"No new matches for summoner [{summoner['puuid']}]")
-            if len(filtered_timeline_ids) == 0:
-                app_logger.debug(f"No new timelines for summoner [{summoner['puuid']}]")
-
             match_data = []
             for match_id in filtered_match_ids:
                 match = await self.riot_helper.get_match_riot(match_id)
                 if match:
                     match_data.append(match)
             if match_data and len(match_data) > 0:
-                await self.db_helper.update_matches(
+                await self.db_helper.update_match_timeline(
                     match_data, "MatchV5", "metadata.matchId"
                 )
 
@@ -52,7 +46,7 @@ class MainTask:
                 if timeline:
                     timeline_data.append(timeline)
             if timeline_data and len(timeline_data) > 0:
-                await self.db_helper.update_matches(
+                await self.db_helper.update_match_timeline(
                     timeline_data, "TimelineV5", "metadata.matchId"
                 )
 
@@ -62,7 +56,7 @@ class MainTask:
             new_summoners = []
             for summoner in existing_summoners:
                 summoner_riot = await self.riot_helper.get_summoner_by_puuid_riot(
-                    summoner["puuid"]
+                    summoner.puuid
                 )
                 if summoner_riot:
                     new_summoners.append(summoner_riot)
@@ -75,7 +69,7 @@ class MainTask:
 
     async def interval_update(self, iteration, interval_time):
         app_logger.debug(
-            f"UPDATING MATCH DATA [{iteration}]: {datetime.now().isoformat()}"
+            f"UPDATING DATABASE DATA [{iteration}]: {datetime.now().isoformat()}"
         )
         iteration += 1
         if iteration == 10:
