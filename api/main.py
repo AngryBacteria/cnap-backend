@@ -17,7 +17,7 @@ app = FastAPI()
 
 @app.get("/match/{item_id}")
 async def get_match_by_id(match_id: str):
-    db_response = await dbh.get_matches_v5(BaseMatchFilter(match_ids=[match_id]))
+    db_response = await dbh.get_matches(BaseMatchFilter(match_ids=[match_id]))
     db_match = db_response[0] if len(db_response) > 0 else None
     if db_match:
         return db_match
@@ -33,25 +33,13 @@ async def get_match_by_id(match_id: str):
 
 @app.get("/matches")
 async def get_matches(match_filter: Annotated[BaseMatchFilter, Query()]):
-    db_response = await dbh.get_matches_v5(match_filter)
+    db_response = await dbh.get_matches(match_filter)
     db_matches = db_response if len(db_response) > 0 else None
     if db_matches:
         return db_matches
     else:
         raise HTTPException(
             status_code=404, detail="No matches found that match the filter"
-        )
-
-
-@app.get("/history")
-async def get_match_history(history_filter: Annotated[BaseMatchFilter, Query()]):
-    db_response = await dbh.get_summoner_match_history(history_filter)
-    db_matches = db_response if len(db_response) > 0 else None
-    if db_matches:
-        return db_matches
-    else:
-        raise HTTPException(
-            status_code=404, detail="No summoner history found that match the filter"
         )
 
 

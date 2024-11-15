@@ -4,6 +4,7 @@ from datetime import datetime
 from helpers.DBHelper import DBHelper, SummonerFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
+from models.SummonerDTODB import SummonerDTODB
 
 
 class MainTask:
@@ -12,7 +13,9 @@ class MainTask:
         self.riot_helper = RiotHelper()
 
     async def update_match_data(self, count=69, offset=0):
-        existing_summoners = await self.db_helper.get_summoners(SummonerFilter())
+        existing_summoners = await self.db_helper.get_summoners(
+            SummonerFilter(limit=10000)
+        )
         if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(
                 "No Summoner data available to update match history. Stopping the loop"
@@ -36,7 +39,7 @@ class MainTask:
                 if match:
                     match_data.append(match)
             if match_data and len(match_data) > 0:
-                await self.db_helper.update_match_timeline(
+                await self.db_helper.update_matches(
                     match_data, "MatchV5", "metadata.matchId"
                 )
 
@@ -46,13 +49,15 @@ class MainTask:
                 if timeline:
                     timeline_data.append(timeline)
             if timeline_data and len(timeline_data) > 0:
-                await self.db_helper.update_match_timeline(
+                await self.db_helper.update_matches(
                     timeline_data, "TimelineV5", "metadata.matchId"
                 )
 
     async def update_summoner_data(self):
-        existing_summoners = await self.db_helper.get_summoners(SummonerFilter())
-        if existing_summoners:
+        existing_summoners = await self.db_helper.get_summoners(
+            SummonerFilter(limit=1000)
+        )
+        if existing_summoners and len(existing_summoners) > 0:
             new_summoners = []
             for summoner in existing_summoners:
                 summoner_riot = await self.riot_helper.get_summoner_by_puuid_riot(
@@ -60,7 +65,14 @@ class MainTask:
                 )
                 if summoner_riot:
                     new_summoners.append(summoner_riot)
-            await self.db_helper.update_summoners(new_summoners)
+
+            await self.db_helper.generic_upsert(
+                new_summoners,
+                "puuid",
+                self.db_helper.summoner_collection,
+                "Summoner",
+                SummonerDTODB,
+            )
 
     async def fill_match_data(self):
         for i in range(0, 2000, 95):
@@ -72,10 +84,9 @@ class MainTask:
             f"UPDATING DATABASE DATA [{iteration}]: {datetime.now().isoformat()}"
         )
         iteration += 1
-        if iteration == 10:
+        if iteration % 10 == 0:
             app_logger.debug(f"UPDATING SUMMONER DATA: {datetime.now().isoformat()}")
             await self.update_summoner_data()
-            iteration = 0
             app_logger.debug(f"UPDATED SUMMONER DATA: {datetime.now().isoformat()}")
         await self.update_match_data(69, 0)
         app_logger.debug(
@@ -87,7 +98,8 @@ class MainTask:
 
 async def main():
     task = MainTask()
-    await task.interval_update(0, 60 * 60)
+    await task.update_summoner_data()
+    # await task.interval_update(0, 60 * 60)
 
 
 if __name__ == "__main__":

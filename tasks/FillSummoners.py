@@ -2,6 +2,7 @@ import asyncio
 
 from helpers.DBHelper import DBHelper
 from helpers.RiotHelper import RiotHelper
+from models.SummonerDTODB import SummonerDTODB
 
 
 class FillSummonersTask:
@@ -54,7 +55,13 @@ class FillSummonersTask:
                 summoner_objects.append(summoner_data)
 
         summoner_objects = [obj for obj in summoner_objects]
-        await self.db_helper.update_summoners(summoner_objects)
+        await self.db_helper.generic_upsert(
+            summoner_objects,
+            "puuid",
+            self.db_helper.summoner_collection,
+            data_name="Summoner",
+            validator=SummonerDTODB,
+        )
 
 
 async def main():

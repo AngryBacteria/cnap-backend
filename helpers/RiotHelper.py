@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 from threading import Lock
 from typing import List, Optional, Dict
@@ -10,9 +9,10 @@ from dotenv import load_dotenv
 
 from helpers.Logger import app_logger
 from models.AccountDTO import AccountDTO
-from models.ChampionDataDTO import ChampionDataDTO
-from models.ChampionSummaryDTO import ChampionSummaryDTO
+from models.ChampionDTO import ChampionDTO
+from models.ItemDTO import ItemDTO
 from models.SummonerDTO import SummonerDTO
+from models.SummonerDTODB import SummonerDTODB
 
 
 class RiotHelper:
@@ -89,25 +89,32 @@ class RiotHelper:
             )
             return []
 
-    async def get_summoner_by_puuid_riot(self, puuid: str) -> Optional[SummonerDTO]:
+    async def get_summoner_by_puuid_riot(self, puuid: str):
         try:
             app_logger.debug(f"Fetching Summoner [{puuid}] with Riot-API")
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
             data = await self._make_request(url)
             # validate
-            return SummonerDTO.model_validate(data)
+            summonerDTO = SummonerDTO.model_validate(data)
+            account = await self.get_account_by_puuid(summonerDTO.puuid)
+            if account:
+                dict_concat = summonerDTO.model_dump() | account.model_dump()
+                summonerDTODB = SummonerDTODB.model_validate(dict_concat)
+                return summonerDTODB
+
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Summoner [{puuid}] with Riot-API: {e}"
             )
             return None
 
-    async def get_account_by_tag(self, name: str, tag: str) -> Optional[AccountDTO]:
+    async def get_account_by_tag(self, name: str, tag: str):
         try:
             tag = tag.replace("#", "")
             app_logger.debug(f"Fetching Account [{name} - {tag}] with Riot-API")
             url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}"
             data = await self._make_request(url)
+            # validate
             return AccountDTO.model_validate(data)
 
         except Exception as e:
@@ -116,10 +123,21 @@ class RiotHelper:
             )
             return None
 
-    # TODO: re-add gameName and tagline
-    async def get_summoner_by_account_tag(
-        self, name: str, tag: str
-    ) -> Optional[SummonerDTO]:
+    async def get_account_by_puuid(self, puuid: str):
+        try:
+            app_logger.debug(f"Fetching Account [{puuid}] with Riot-API")
+            url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
+            data = await self._make_request(url)
+            # validate
+            return AccountDTO.model_validate(data)
+
+        except Exception as e:
+            app_logger.error(
+                f"Error while fetching Account [{puuid}] with Riot-API: {e}"
+            )
+            return None
+
+    async def get_summoner_by_account_tag(self, name: str, tag: str):
         account = await self.get_account_by_tag(name, tag)
         if account:
             return await self.get_summoner_by_puuid_riot(account.puuid)
@@ -139,119 +157,45 @@ class RiotHelper:
             )
             return []
 
-    async def get_lol_champions_summary(
-        self, patch="latest", locale="default"
-    ) -> list[ChampionSummaryDTO]:
+    async def get_champions(self, patch="latest", locale="en-US"):
         try:
-            raw_champs = await self._make_request(
-                f"{self.cdragon_url}/{patch}/plugins/rcp-be-lol-game-data/global/{locale}/v1/champion-summary.json"
+            raw_champions = await self._make_request(
+                f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/champions.json"
             )
 
-            champs = []
-            for raw_champ in raw_champs:
-                # fix asset paths
-                keys_to_fix = ["squarePortraitPath"]
-                for key in keys_to_fix:
-                    raw_champ[key] = self.raw_to_cdragon_path(raw_champ[key])
-
-                # validate
-                champ = ChampionSummaryDTO.model_validate(raw_champ)
-                champs.append(champ)
-
-            return champs
-
+            # validate and parse
+            champions = []
+            for key, value in raw_champions.items():
+                champion = ChampionDTO.model_validate(value)
+                champions.append(champion)
+            return champions
         except Exception as e:
-            app_logger.error(
-                f"Error while fetching Champion Summary with Riot-API: {e}"
-            )
+            app_logger.error(f"Error while fetching Champions with Meraki-CDN: {e}")
             return []
 
-    async def get_lol_champion(
-        self, champion_id: str, patch="latest", locale="default"
-    ) -> Optional[ChampionDataDTO]:
+    async def get_items(self, patch="latest", locale="en-US"):
         try:
-            raw_champ = await self._make_request(
-                f"{self.cdragon_url}/{patch}/plugins/rcp-be-lol-game-data/global/{locale}/v1/champions/{champion_id}.json"
+            raw_items = await self._make_request(
+                f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/items.json"
             )
 
-            # fix asset paths
-            keys_to_fix_root = [
-                "squarePortraitPath",
-                "stingerSfxPath",
-                "chooseVoPath",
-                "banVoPath",
-            ]
-            for key in keys_to_fix_root:
-                raw_champ[key] = self.raw_to_cdragon_path(raw_champ[key])
-
-            keys_to_fix_skins = [
-                "splashPath",
-                "uncenteredSplashPath",
-                "tilePath",
-                "loadScreenPath",
-                "splashVideoPath",
-                "collectionSplashVideoPath",
-                "collectionCardHoverVideoPath",
-                "chromaPath",
-                "rarityGemPath",
-            ]
-            for skin in raw_champ["skins"]:
-                for key in keys_to_fix_skins:
-                    skin[key] = self.raw_to_cdragon_path(skin[key])
-
-            keys_to_fix_passive = [
-                "abilityIconPath",
-                "abilityVideoPath",
-                "abilityVideoImagePath",
-            ]
-            for key in keys_to_fix_passive:
-                raw_champ["passive"][key] = self.raw_to_cdragon_path(
-                    raw_champ["passive"][key]
-                )
-
-            keys_to_fix_spells = [
-                "abilityIconPath",
-                "abilityVideoPath",
-                "abilityVideoImagePath",
-            ]
-            for ability in raw_champ["spells"]:
-                for key in keys_to_fix_spells:
-                    ability[key] = self.raw_to_cdragon_path(ability[key])
-
-            # validate
-            return ChampionDataDTO.model_validate(raw_champ)
-
+            # Validate and return
+            items = []
+            for key, value in raw_items.items():
+                item = ItemDTO.model_validate(value)
+                items.append(item)
+            return items
         except Exception as e:
-            app_logger.error(
-                f"Error while fetching Champion [{champion_id}] with Riot-API: {e}"
-            )
-            return None
-
-    def raw_to_cdragon_path(self, raw_path: str, patch="latest", locale="default"):
-        if not raw_path:
-            return raw_path
-
-        if "/lol-game-data/assets/" in raw_path:
-            raw_path = raw_path.split("/lol-game-data/assets/")[1]
-            return f"{self.cdragon_url}/{patch}/plugins/rcp-be-lol-game-data/global/{locale}/{raw_path}".lower()
-
-        if "champion-abilities" in raw_path:
-            return f"https://d28xe8vt774jo5.cloudfront.net/{raw_path}"
-
-        else:
-            return raw_path
+            app_logger.error(f"Error while fetching Items with Meraki-CDN: {e}")
+            return []
 
 
 async def main():
     rh = RiotHelper()
-    summoner = await rh.get_summoner_by_account_tag("AngryBacteria", "cnap")
-    app_logger.debug(summoner)
-    match_list = await rh.get_match_list_riot(summoner)
-    app_logger.debug(match_list)
-    champion_mastery = await rh.get_champion_mastery_by_puuid_riot(summoner.puuid)
-    app_logger.debug(champion_mastery[0]["championPoints"])
-    annie = await rh.get_lol_champion("1")
-    print(json.dumps(annie.dict(), indent=4))
+    items = await rh.get_items()
+    print(items[0].name)
+    champions = await rh.get_champions()
+    print(champions[0].name)
 
 
 if __name__ == "__main__":
