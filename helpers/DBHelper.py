@@ -1,7 +1,7 @@
 import asyncio
 import os
 from threading import Lock
-from typing import List, Dict, Any, Mapping, Literal, Type, Union
+from typing import Dict, Any, Mapping, Literal, Union, Type
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import (
@@ -19,16 +19,17 @@ from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
 
 
+# TODO check double validation
 class BaseFilter(BaseModel):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
 
 
 class BaseMatchFilter(BaseFilter):
-    participant_puuids: List[str] = Field(
+    participant_puuids: list[str] = Field(
         default_factory=list, description="List of participant PUUIDs to filter by"
     )
-    match_ids: List[str] = Field(
+    match_ids: list[str] = Field(
         default_factory=list, description="List of match IDs to filter by"
     )
     queue: int = Field(default=-1, description="Queue ID to filter by")
@@ -140,10 +141,10 @@ class DBHelper:
 
     async def get_non_existing_ids(
         self,
-        ids: List[str],
-        entity_name: str = Literal["MatchV5", "TimelineV5"],
+        ids: list[str],
+        entity_name: Literal["MatchV5", "TimelineV5"],
         id_field: str = "metadata.matchId",
-    ) -> List[str]:
+    ) -> list[str]:
         try:
             if not ids:
                 return []
@@ -175,8 +176,8 @@ class DBHelper:
     # TODO REPLACE BY GENERIC FUNCTION
     async def update_matches(
         self,
-        documents: List[Dict],
-        entity_name: str = Literal["MatchV5", "TimelineV5"],
+        documents: list[Dict],
+        entity_name: Literal["MatchV5", "TimelineV5"],
         id_field: str = "metadata.matchId",
     ) -> bool:
         try:
@@ -205,7 +206,7 @@ class DBHelper:
             app_logger.error(f"Error uploading {entity_name} to MongoDB: {error}")
             return False
 
-    async def get_matches(self, match_filter: BaseMatchFilter) -> List[Dict]:
+    async def get_matches(self, match_filter: BaseMatchFilter) -> list[Dict]:
         identifier = "Timeline" if match_filter.timeline else "Match"
         try:
             db_filter = parse_match_timeline_filter(match_filter)
@@ -229,7 +230,7 @@ class DBHelper:
 
     async def get_summoners(
         self, summoner_filter: SummonerFilter
-    ) -> List[SummonerDTODB]:
+    ) -> list[SummonerDTODB]:
         try:
             db_filter: Dict[str, Any] = {}
 
@@ -255,7 +256,7 @@ class DBHelper:
             app_logger.error("Error getting Summoners with MongoDB: ", error)
             return []
 
-    async def update_summoners(self, summoners: List[SummonerDTODB]) -> bool:
+    async def update_summoners(self, summoners: list[SummonerDTODB]) -> bool:
         try:
             # validate all the summoners
             [SummonerDTODB.model_validate(summoner) for summoner in summoners]
@@ -311,22 +312,42 @@ class DBHelper:
 
     async def generic_upsert(
         self,
-        data: Union[List[dict], List[BaseModel]],
+        data: Union[list[dict], list[BaseModel]],
         key_field: str,
         collection: AsyncIOMotorCollection,
         data_name="Generic Data",
-        validator: Type[BaseModel] = None,
+        validator: Type[BaseModel] | None = None,
     ) -> bool:
         try:
-            if isinstance(data[0], BaseModel):
-                data = [item.model_dump() for item in data]
+
+            def get_nested_value(item: dict, nested_key: str) -> Any:
+                """Helper function to get value from nested dictionary using dot notation"""
+                keys = nested_key.split(".")
+                current: Union[Dict, Any] = item
+                for key in keys:
+                    if isinstance(current, dict):
+                        current = current.get(key)
+                    else:
+                        raise ValueError(f"Invalid key {nested_key} for item {item}")
+                if current is None:
+                    raise ValueError(f"Invalid key {nested_key} for item {item}")
+                return current
+
+            converted_data = [
+                item.model_dump() if isinstance(item, BaseModel) else item
+                for item in data
+            ]
 
             if validator:
-                [validator.model_validate(item) for item in data]
+                [validator.model_validate(item) for item in converted_data]
 
             bulk_ops = [
-                UpdateOne({key_field: item[key_field]}, {"$set": item}, upsert=True)
-                for item in data
+                UpdateOne(
+                    {key_field: get_nested_value(item, key_field)},
+                    {"$set": item},
+                    upsert=True,
+                )
+                for item in converted_data
             ]
 
             result = await collection.bulk_write(bulk_ops)
@@ -342,11 +363,6 @@ class DBHelper:
 async def main():
     dbh = DBHelper()
     await dbh.init_indexes()
-
-    summoners = await dbh.get_summoners(SummonerFilter())
-    print(summoners)
-    print(len(summoners))
-
     await dbh.disconnect()
 
 

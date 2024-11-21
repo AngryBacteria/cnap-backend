@@ -1,7 +1,8 @@
 import asyncio
 import os
+from collections.abc import Sequence
 from threading import Lock
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 
 import httpx
 from asynciolimiter import Limiter
@@ -157,45 +158,38 @@ class RiotHelper:
             )
             return []
 
-    async def get_champions(self, patch="latest", locale="en-US"):
-        try:
-            raw_champions = await self._make_request(
-                f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/champions.json"
-            )
-
-            # validate and parse
+    async def get_cdn_resource(
+        self,
+        resource_type: Literal["items", "champions"],
+        patch="latest",
+        locale="en-US",
+    ) -> Sequence[ItemDTO] | Sequence[ChampionDTO]:
+        app_logger.debug(f"Fetching {resource_type} with Meraki-CDN")
+        raw_data = await self._make_request(
+            f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/{resource_type}.json"
+        )
+        if resource_type == "champions":
             champions = []
-            for key, value in raw_champions.items():
+            for key, value in raw_data.items():
                 champion = ChampionDTO.model_validate(value)
                 champions.append(champion)
+
             return champions
-        except Exception as e:
-            app_logger.error(f"Error while fetching Champions with Meraki-CDN: {e}")
-            return []
-
-    async def get_items(self, patch="latest", locale="en-US"):
-        try:
-            raw_items = await self._make_request(
-                f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/items.json"
-            )
-
-            # Validate and return
+        else:
             items = []
-            for key, value in raw_items.items():
+            for key, value in raw_data.items():
                 item = ItemDTO.model_validate(value)
                 items.append(item)
+
             return items
-        except Exception as e:
-            app_logger.error(f"Error while fetching Items with Meraki-CDN: {e}")
-            return []
 
 
 async def main():
     rh = RiotHelper()
-    items = await rh.get_items()
-    print(items[0].name)
-    champions = await rh.get_champions()
+    champions = await rh.get_cdn_resource("champions")
     print(champions[0].name)
+    items = await rh.get_cdn_resource("items")
+    print(items[0].name)
 
 
 if __name__ == "__main__":

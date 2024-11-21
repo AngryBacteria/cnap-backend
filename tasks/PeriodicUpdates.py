@@ -7,6 +7,7 @@ from helpers.RiotHelper import RiotHelper
 from models.SummonerDTODB import SummonerDTODB
 
 
+# TODO add champion / item updates
 class MainTask:
     def __init__(self):
         self.db_helper = DBHelper()
@@ -39,8 +40,12 @@ class MainTask:
                 if match:
                     match_data.append(match)
             if match_data and len(match_data) > 0:
-                await self.db_helper.update_matches(
-                    match_data, "MatchV5", "metadata.matchId"
+                await self.db_helper.generic_upsert(
+                    match_data,
+                    "metadata.matchId",
+                    self.db_helper.match_collection,
+                    "Match",
+                    None,
                 )
 
             timeline_data = []
@@ -49,8 +54,12 @@ class MainTask:
                 if timeline:
                     timeline_data.append(timeline)
             if timeline_data and len(timeline_data) > 0:
-                await self.db_helper.update_matches(
-                    timeline_data, "TimelineV5", "metadata.matchId"
+                await self.db_helper.generic_upsert(
+                    timeline_data,
+                    "metadata.matchId",
+                    self.db_helper.timeline_collection,
+                    "Timeline",
+                    None,
                 )
 
     async def update_summoner_data(self):
