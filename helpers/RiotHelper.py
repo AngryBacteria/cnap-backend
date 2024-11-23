@@ -76,17 +76,17 @@ class RiotHelper:
             return None
 
     async def get_match_list_riot(
-        self, summoner: SummonerDTO, count: int = 95, offset: int = 0
+        self, puuid: str, count: int = 95, offset: int = 0
     ) -> list[str]:
         try:
             app_logger.debug(
-                f"Fetching Matchlist [count={count}, offset={offset}] [{summoner.puuid}] with Riot-API"
+                f"Fetching Matchlist [count={count}, offset={offset}] [{puuid}] with Riot-API"
             )
-            url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{summoner.puuid}/ids?start={offset}&count={count}"
+            url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start={offset}&count={count}"
             return await self._make_request(url)
         except Exception as e:
             app_logger.error(
-                f"Error while fetching Matchlist [count={count}, offset={offset}] of Summoner [{summoner.puuid}] with Riot-API: {e}"
+                f"Error while fetching Matchlist [count={count}, offset={offset}] of Summoner [{puuid}] with Riot-API: {e}"
             )
             return []
 

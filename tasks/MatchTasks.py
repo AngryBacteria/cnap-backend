@@ -1,21 +1,17 @@
-import asyncio
-from datetime import datetime
-
 from helpers.DBHelper import DBHelper, SummonerFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
-from models.SummonerDTODB import SummonerDTODB
 
 
-# TODO add champion / item updates
-class MainTask:
+# TODO add champion / item / new summoners updates
+class MatchTasks:
     def __init__(self):
         self.db_helper = DBHelper()
         self.riot_helper = RiotHelper()
 
-    async def update_match_data(self, count=69, offset=0):
+    async def update_match_data(self, count=69, offset=0, puuid=""):
         existing_summoners = await self.db_helper.get_summoners(
-            SummonerFilter(limit=10000)
+            SummonerFilter(limit=10000, puuid=puuid)
         )
         if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(
@@ -25,7 +21,7 @@ class MainTask:
 
         for summoner in existing_summoners:
             riot_match_ids = await self.riot_helper.get_match_list_riot(
-                summoner, count, offset
+                summoner.puuid, count, offset
             )
             filtered_match_ids = await self.db_helper.get_non_existing_ids(
                 riot_match_ids, "MatchV5", "metadata.matchId"
@@ -62,54 +58,7 @@ class MainTask:
                     None,
                 )
 
-    async def update_summoner_data(self):
-        existing_summoners = await self.db_helper.get_summoners(
-            SummonerFilter(limit=1000)
-        )
-        if existing_summoners and len(existing_summoners) > 0:
-            new_summoners = []
-            for summoner in existing_summoners:
-                summoner_riot = await self.riot_helper.get_summoner_by_puuid_riot(
-                    summoner.puuid
-                )
-                if summoner_riot:
-                    new_summoners.append(summoner_riot)
-
-            await self.db_helper.generic_upsert(
-                new_summoners,
-                "puuid",
-                self.db_helper.summoner_collection,
-                "Summoner",
-                SummonerDTODB,
-            )
-
     async def fill_match_data(self):
         for i in range(0, 2000, 95):
             app_logger.debug(f"INSERTING WITH I = {i}")
             await self.update_match_data(95, i)
-
-    async def interval_update(self, iteration, interval_time):
-        app_logger.debug(
-            f"UPDATING DATABASE DATA [{iteration}]: {datetime.now().isoformat()}"
-        )
-        iteration += 1
-        if iteration % 10 == 0:
-            app_logger.debug(f"UPDATING SUMMONER DATA: {datetime.now().isoformat()}")
-            await self.update_summoner_data()
-            app_logger.debug(f"UPDATED SUMMONER DATA: {datetime.now().isoformat()}")
-        await self.update_match_data(69, 0)
-        app_logger.debug(
-            f"UPDATED MATCH DATA [{iteration}]: {datetime.now().isoformat()}"
-        )
-        await asyncio.sleep(interval_time)
-        await self.interval_update(iteration, interval_time)
-
-
-async def main():
-    task = MainTask()
-    await task.update_summoner_data()
-    # await task.interval_update(0, 60 * 60)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
