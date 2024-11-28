@@ -98,11 +98,9 @@ class RiotHelper:
             data = await self._make_request(url)
             # validate
             summonerDTO = SummonerDTO.model_validate(data)
-
             # check if account provided
             if not account:
                 account = await self.get_account_by_puuid(summonerDTO.puuid)
-
             if account:
                 dict_concat = summonerDTO.model_dump() | account.model_dump()
                 summonerDTODB = SummonerDTODB.model_validate(dict_concat)

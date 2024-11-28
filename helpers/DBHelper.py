@@ -300,7 +300,7 @@ class DBHelper:
 
             if len(data) == 0:
                 app_logger.debug(f"No {data_name} data to upsert")
-                return True
+                return False
 
             converted_data = [
                 item.model_dump() if isinstance(item, BaseModel) else item
