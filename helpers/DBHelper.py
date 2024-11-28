@@ -11,7 +11,6 @@ from motor.motor_asyncio import (
 )
 from pydantic import BaseModel, Field
 from pymongo import UpdateOne
-from pymongo.results import BulkWriteResult
 
 from helpers.Logger import app_logger
 from models.ChampionDTO import ChampionDTO
@@ -19,7 +18,6 @@ from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
 
 
-# TODO check double validation
 class BaseFilter(BaseModel):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
@@ -173,39 +171,6 @@ class DBHelper:
             )
             return []
 
-    # TODO REPLACE BY GENERIC FUNCTION
-    async def update_matches(
-        self,
-        documents: list[Dict],
-        entity_name: Literal["MatchV5", "TimelineV5"],
-        id_field: str = "metadata.matchId",
-    ) -> bool:
-        try:
-            bulk_ops = [
-                UpdateOne(
-                    {id_field: doc["metadata"]["matchId"]}, {"$set": doc}, upsert=True
-                )
-                for doc in documents
-            ]
-
-            result: BulkWriteResult
-            if entity_name == "MatchV5":
-                result = await self.match_collection.bulk_write(bulk_ops)
-            elif entity_name == "TimelineV5":
-                result = await self.timeline_collection.bulk_write(bulk_ops)
-            else:
-                raise ValueError(f"Invalid entity name: {entity_name}")
-
-            app_logger.debug(
-                f"Upserted {result.upserted_count}, modified {result.modified_count} "
-                f"and inserted {result.inserted_count} {entity_name} data"
-            )
-            return True
-
-        except Exception as error:
-            app_logger.error(f"Error uploading {entity_name} to MongoDB: {error}")
-            return False
-
     async def get_matches(self, match_filter: BaseMatchFilter) -> list[Dict]:
         identifier = "Timeline" if match_filter.timeline else "Match"
         try:
@@ -332,6 +297,10 @@ class DBHelper:
                 if current is None:
                     raise ValueError(f"Invalid key {nested_key} for item {item}")
                 return current
+
+            if len(data) == 0:
+                app_logger.debug(f"No {data_name} data to upsert")
+                return True
 
             converted_data = [
                 item.model_dump() if isinstance(item, BaseModel) else item

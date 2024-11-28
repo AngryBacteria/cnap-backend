@@ -1,6 +1,7 @@
+from time import perf_counter
 from typing import Annotated, Dict
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 
 from helpers.DBHelper import (
     DBHelper,
@@ -8,6 +9,7 @@ from helpers.DBHelper import (
     BaseMatchFilter,
     BaseFilter,
 )
+from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 from models.ChampionDTO import ChampionDTO
 from models.ItemDTO import ItemDTO
@@ -16,6 +18,15 @@ from models.SummonerDTODB import SummonerDTODB
 dbh = DBHelper()
 rh = RiotHelper()
 app = FastAPI()
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = perf_counter()
+    response = await call_next(request)
+    process_time = (perf_counter() - start_time) * 1000
+    app_logger.debug(f"{process_time:.2f}ms")
+    response.headers["X-Process-Time"] = f"{process_time:.2f}"
+    return response
 
 
 @app.get("/match/{match_id}")

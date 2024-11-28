@@ -1,4 +1,10 @@
+import asyncio
+import os
+
+from dotenv import load_dotenv
+
 from helpers.DBHelper import DBHelper, SummonerFilter
+from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 from models.SummonerDTODB import SummonerDTODB
 
@@ -7,50 +13,30 @@ class SummonerTasks:
     def __init__(self):
         self.db_helper = DBHelper()
         self.riot_helper = RiotHelper()
-        self.account_names = [
-            {"name": "AngryBacteria", "tag": "cnap"},
-            {"name": "BriBri", "tag": "0699"},
-            {"name": "VerniHD", "tag": "EUW"},
-            {"name": "Baywack", "tag": "CnAP"},
-            {"name": "3 6 6 1", "tag": "#EUW"},
-            {"name": "SignisAura", "tag": "CnAP"},
-            {"name": "Alraune22", "tag": "CnAP"},
-            {"name": "Aw3s0m3mag1c", "tag": "EUW"},
-            {"name": "Gnerfedurf", "tag": "BCH"},
-            {"name": "Gnoblin", "tag": "BCH"},
-            {"name": "VredVampire", "tag": "2503"},
-            {"name": "D3M0NK1LL3RG0D", "tag": "EUW"},
-            {"name": "GLOMVE", "tag": "EUW"},
-            {"name": "hide on büschli", "tag": "EUW"},
-            {"name": "IBlueSnow", "tag": "EUW"},
-            {"name": "Nayan Stocker", "tag": "EUW"},
-            {"name": "Norina Michel", "tag": "EUW"},
-            {"name": "pentaskill", "tag": "CnAP"},
-            {"name": "Pollux", "tag": "2910"},
-            {"name": "Polylinux", "tag": "EUW"},
-            {"name": "Prequ", "tag": "EUW"},
-            {"name": "Sausage Revolver", "tag": "EUW"},
-            {"name": "swiss egirI", "tag": "EUW"},
-            {"name": "TCT Tawan", "tag": "EUW"},
-            {"name": "The 26th Bam", "tag": "EUW"},
-            {"name": "Theera3rd", "tag": "EUW"},
-            {"name": "Zinsstro", "tag": "EUW"},
-            {"name": "WhatThePlay", "tag": "CnAP"},
-            {"name": "pentaskill", "tag": "CnAP"},
-            {"name": "Árexo", "tag": "CNAP"},
-        ]
+        self.accounts_string = "AngryBacteria_cnap,BriBri_0699,VerniHD_EUW,Baywack_CnAP,3 6 6 1_#EUW,SignisAura_CnAP,Alraune22_CnAP,Aw3s0m3mag1c_EUW,Gnerfedurf_BCH,Gnoblin_BCH,VredVampire_2503,D3M0NK1LL3RG0D_EUW,GLOMVE_EUW,hide on büschli_EUW,IBlueSnow_EUW,Nayan Stocker_EUW,Norina Michel_EUW,pentaskill_CnAP,Pollux_2910,Polylinux_EUW,Prequ_EUW,Sausage Revolver_EUW,swiss egirI_EUW,TCT Tawan_EUW,The 26th Bam_EUW,Theera3rd_EUW,Zinsstro_EUW,WhatThePlay_CnAP,pentaskill_CnAP,Árexo_CNAP"
 
+    # Fil the summoners collection with the accounts provided in the environment variable ACCOUNTS_STRING
     async def fill_summoners(self):
+        load_dotenv()
+        accounts_string = os.getenv("ACCOUNTS_STRING")
+        if accounts_string is None:
+            raise Exception("No ACCOUNTS_STRING string provided, aborting...")
+
+
+        accounts_string_seperated = accounts_string.split(",")
         summoner_objects = []
+        for account in accounts_string_seperated:
+            if len(account.strip().split("_")) > 1:
+                name = account.strip().split("_")[0]
+                tag = account.strip().split("_")[1]
+                summoner_data = await self.riot_helper.get_summoner_by_account_tag(
+                    name, tag
+                )
+                if summoner_data is not None:
+                    summoner_objects.append(summoner_data)
+            else:
+                app_logger.error(f"Account {account} is not valid, skipping it...")
 
-        for account in self.account_names:
-            summoner_data = await self.riot_helper.get_summoner_by_account_tag(
-                account["name"], account["tag"]
-            )
-            if summoner_data is not None:
-                summoner_objects.append(summoner_data)
-
-        summoner_objects = [obj for obj in summoner_objects]
         await self.db_helper.generic_upsert(
             summoner_objects,
             "puuid",
@@ -59,6 +45,7 @@ class SummonerTasks:
             validator=SummonerDTODB,
         )
 
+    # Add a single summoner to the summoners collection
     async def add_summoner(self, name: str, tag: str, puuid: str | None = None):
         if puuid is not None:
             summoner_data = await self.riot_helper.get_summoner_by_puuid_riot(puuid)
@@ -78,6 +65,7 @@ class SummonerTasks:
         else:
             raise ValueError("Summoner not found")
 
+    # Update the summoner data of all summoners in the summoners collection
     async def update_summoner_data(self):
         existing_summoners = await self.db_helper.get_summoners(
             SummonerFilter(limit=1000)
@@ -98,3 +86,11 @@ class SummonerTasks:
                 "Summoner",
                 SummonerDTODB,
             )
+
+
+async def main():
+    summoner_tasks = SummonerTasks()
+    await summoner_tasks.fill_summoners()
+
+if __name__ == "__main__":
+    asyncio.run(main())

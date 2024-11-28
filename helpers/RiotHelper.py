@@ -90,18 +90,25 @@ class RiotHelper:
             )
             return []
 
-    async def get_summoner_by_puuid_riot(self, puuid: str):
+    # Get a summoner by the puuid
+    async def get_summoner_by_puuid_riot(self, puuid: str, account: Optional[AccountDTO] = None):
         try:
             app_logger.debug(f"Fetching Summoner [{puuid}] with Riot-API")
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
             data = await self._make_request(url)
             # validate
             summonerDTO = SummonerDTO.model_validate(data)
-            account = await self.get_account_by_puuid(summonerDTO.puuid)
+
+            # check if account provided
+            if not account:
+                account = await self.get_account_by_puuid(summonerDTO.puuid)
+
             if account:
                 dict_concat = summonerDTO.model_dump() | account.model_dump()
                 summonerDTODB = SummonerDTODB.model_validate(dict_concat)
                 return summonerDTODB
+            else:
+                raise ValueError("Account not found")
 
         except Exception as e:
             app_logger.error(
@@ -109,6 +116,7 @@ class RiotHelper:
             )
             return None
 
+    # Get an account by the name and tag
     async def get_account_by_tag(self, name: str, tag: str):
         try:
             tag = tag.replace("#", "")
@@ -124,6 +132,7 @@ class RiotHelper:
             )
             return None
 
+    # Get an account by the puuid
     async def get_account_by_puuid(self, puuid: str):
         try:
             app_logger.debug(f"Fetching Account [{puuid}] with Riot-API")
@@ -138,11 +147,19 @@ class RiotHelper:
             )
             return None
 
+    # Fetch a summoner by providing the name and tag of the account
     async def get_summoner_by_account_tag(self, name: str, tag: str):
-        account = await self.get_account_by_tag(name, tag)
-        if account:
-            return await self.get_summoner_by_puuid_riot(account.puuid)
-        return None
+        try:
+            account = await self.get_account_by_tag(name, tag)
+            if account:
+                return await self.get_summoner_by_puuid_riot(account.puuid, account)
+            else:
+                raise ValueError("Account not found")
+        except Exception as e:
+            app_logger.error(
+                f"Error while fetching Summoner [{name} - {tag}] with Riot-API: {e}"
+            )
+            return None
 
     async def get_champion_mastery_by_puuid_riot(self, puuid: str) -> List[Dict]:
         try:
