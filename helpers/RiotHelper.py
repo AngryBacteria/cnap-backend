@@ -49,7 +49,11 @@ class RiotHelper:
         await self.limiter.wait()
         response = await self.client.get(url)
         response.raise_for_status()
-        return response.json()
+        json_data = response.json()
+
+        if json_data is None:
+            raise ValueError("No data returned")
+        return json_data
 
     async def get_match_riot(self, match_id: str) -> Optional[Dict]:
         try:
@@ -95,7 +99,7 @@ class RiotHelper:
         self, puuid: str, account: Optional[AccountDTO] = None
     ):
         try:
-            app_logger.debug(f"Fetching Summoner [{puuid}] with Riot-API")
+            app_logger.debug(f"Fetching Summoner [{puuid}] by puuid with Riot-API")
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
             data = await self._make_request(url)
             # validate
@@ -120,7 +124,7 @@ class RiotHelper:
     async def get_account_by_tag(self, name: str, tag: str):
         try:
             tag = tag.replace("#", "")
-            app_logger.debug(f"Fetching Account [{name} - {tag}] with Riot-API")
+            app_logger.debug(f"Fetching Account [{name} - {tag}] by name-tag with Riot-API")
             url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}"
             data = await self._make_request(url)
             # validate
@@ -135,7 +139,7 @@ class RiotHelper:
     # Get an account by the puuid
     async def get_account_by_puuid(self, puuid: str):
         try:
-            app_logger.debug(f"Fetching Account [{puuid}] with Riot-API")
+            app_logger.debug(f"Fetching Account [{puuid}] by puuid with Riot-API")
             url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
             data = await self._make_request(url)
             # validate
@@ -203,10 +207,24 @@ class RiotHelper:
 
 async def main():
     rh = RiotHelper()
+    # cdn
     champions = await rh.get_cdn_resource("champions")
     print(champions[0].name)
     items = await rh.get_cdn_resource("items")
     print(items[0].name)
+    # account
+    account = await rh.get_account_by_tag("AngryBacteria", "cnap")
+    summoner = await rh.get_summoner_by_account_tag("AngryBacteria", "cnap")
+    summoner2 = await rh.get_summoner_by_puuid_riot(account.puuid)
+    print(account.gameName)
+    print(summoner.gameName)
+    print(summoner2.gameName)
+    # matchlist
+    matchlist = await rh.get_match_list_riot(summoner.puuid)
+    print(matchlist)
+    # match
+    match = await rh.get_match_riot(matchlist[0])
+    print(match)
 
 
 if __name__ == "__main__":
