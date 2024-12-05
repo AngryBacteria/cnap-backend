@@ -91,7 +91,9 @@ class RiotHelper:
             return []
 
     # Get a summoner by the puuid
-    async def get_summoner_by_puuid_riot(self, puuid: str, account: Optional[AccountDTO] = None):
+    async def get_summoner_by_puuid_riot(
+        self, puuid: str, account: Optional[AccountDTO] = None
+    ):
         try:
             app_logger.debug(f"Fetching Summoner [{puuid}] with Riot-API")
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"

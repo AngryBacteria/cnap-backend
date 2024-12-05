@@ -221,28 +221,6 @@ class DBHelper:
             app_logger.error("Error getting Summoners with MongoDB: ", error)
             return []
 
-    async def update_summoners(self, summoners: list[SummonerDTODB]) -> bool:
-        try:
-            # validate all the summoners
-            [SummonerDTODB.model_validate(summoner) for summoner in summoners]
-            bulk_ops = [
-                UpdateOne(
-                    {"puuid": summoner.puuid},
-                    {"$set": summoner.model_dump()},
-                    upsert=True,
-                )
-                for summoner in summoners
-            ]
-
-            result = await self.summoner_collection.bulk_write(bulk_ops)
-            app_logger.debug(
-                f"Upserted {result.upserted_count} modified {result.modified_count} Inserted {result.inserted_count} summoner data"
-            )
-            return True
-        except Exception as error:
-            app_logger.error("Error uploading summoners to MongoDB: ", error)
-            return False
-
     # TODO filter
     async def get_champions(self, champion_filter: BaseFilter):
         try:
@@ -321,7 +299,7 @@ class DBHelper:
 
             result = await collection.bulk_write(bulk_ops)
             app_logger.debug(
-                f"Upserted {result.upserted_count} modified {result.modified_count} Inserted {result.inserted_count} {data_name}"
+                f"Upserted {result.upserted_count} | Modified {result.modified_count} | Inserted {result.inserted_count} --> {data_name}"
             )
             return True
         except Exception as error:

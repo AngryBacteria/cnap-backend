@@ -22,7 +22,6 @@ class SummonerTasks:
         if accounts_string is None:
             raise Exception("No ACCOUNTS_STRING string provided, aborting...")
 
-
         accounts_string_seperated = accounts_string.split(",")
         summoner_objects = []
         for account in accounts_string_seperated:
@@ -91,6 +90,7 @@ class SummonerTasks:
 async def main():
     summoner_tasks = SummonerTasks()
     await summoner_tasks.fill_summoners()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

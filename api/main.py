@@ -19,6 +19,7 @@ dbh = DBHelper()
 rh = RiotHelper()
 app = FastAPI()
 
+
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = perf_counter()
@@ -27,22 +28,6 @@ async def add_process_time_header(request: Request, call_next):
     app_logger.debug(f"{process_time:.2f}ms")
     response.headers["X-Process-Time"] = f"{process_time:.2f}"
     return response
-
-
-@app.get("/match/{match_id}")
-async def get_match_by_id(match_id: str):
-    db_response = await dbh.get_matches(BaseMatchFilter(match_ids=[match_id]))
-    db_match = db_response[0] if len(db_response) > 0 else None
-    if db_match:
-        return db_match
-    else:
-        riot_match = await rh.get_match_riot(match_id)
-        if riot_match:
-            return riot_match
-        else:
-            raise HTTPException(
-                status_code=404, detail=f"Match with id [${match_id}] not found"
-            )
 
 
 @app.get("/matches")
