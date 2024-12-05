@@ -17,6 +17,8 @@ from models.ChampionDTO import ChampionDTO
 from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
 
+# TODO replace by model_construct()
+
 
 class BaseFilter(BaseModel):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")

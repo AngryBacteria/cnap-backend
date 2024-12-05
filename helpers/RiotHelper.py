@@ -2,13 +2,15 @@ import asyncio
 import os
 from collections.abc import Sequence
 from threading import Lock
-from typing import List, Optional, Dict, Literal
+from typing import Optional, Dict, Literal, TypeVar, Any
 
 import httpx
 from asynciolimiter import Limiter
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 from helpers.Logger import app_logger
+from models.ChampionMasteryDTO import ChampionMasteryDTO
 from models.AccountDTO import AccountDTO
 from models.ChampionDTO import ChampionDTO
 from models.ItemDTO import ItemDTO
@@ -45,17 +47,37 @@ class RiotHelper:
 
         return cls._instance
 
-    async def _make_request(self, url: str):
+    GenericModel = TypeVar("GenericModel", bound=BaseModel)
+
+    async def _make_request(
+        self, url: str, model: Optional[type[GenericModel]] = None
+    ) -> GenericModel | Any:
+        """
+        Make a request to the given URL and return the response. If a pydantic model is provided, validate the
+        response with the model for better type safety.
+        :param url: The url to make the request to
+        :param model: The pydantic model to validate the response with
+        :return: Parsed JSON data or the validated pydantic model
+        """
         await self.limiter.wait()
         response = await self.client.get(url)
         response.raise_for_status()
         json_data = response.json()
-
         if json_data is None:
             raise ValueError("No data returned")
-        return json_data
 
-    async def get_match_riot(self, match_id: str) -> Optional[Dict]:
+        if model:
+            return model.validate(json_data)
+        else:
+            return json_data
+
+    # TODO basic pydantic model for match
+    async def get_match_riot(self, match_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch a match from the Riot-API. No pydantic validation as data changes quite often.
+        :param match_id: The match id of the match to fetch
+        :return: Dict representation of the match
+        """
         try:
             app_logger.debug(f"Fetching Match [{match_id}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}"
@@ -67,7 +89,13 @@ class RiotHelper:
             )
             return None
 
-    async def get_timeline_riot(self, timeline_id: str) -> Optional[Dict]:
+    # TODO basic pydantic model for timeline
+    async def get_timeline_riot(self, timeline_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch a timeline from the Riot-API. No pydantic validation as data changes quite often.
+        :param timeline_id: The id of the timeline to fetch
+        :return: Dict representation of the timeline
+        """
         try:
             app_logger.debug(f"Fetching Timeline [{timeline_id}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{timeline_id}/timeline"
@@ -82,6 +110,13 @@ class RiotHelper:
     async def get_match_list_riot(
         self, puuid: str, count: int = 95, offset: int = 0
     ) -> list[str]:
+        """
+        Fetch a matchlist from the Riot-API for a given puuid (summoner).
+        :param puuid: The puuid of the summoner to fetch the matchlist for
+        :param count: How many matches to parse (max 100)
+        :param offset: The offset to start fetching matches
+        :return: A list of match_ids (strings) for the given summoner
+        """
         try:
             app_logger.debug(
                 f"Fetching Matchlist [count={count}, offset={offset}] [{puuid}] with Riot-API"
@@ -94,23 +129,64 @@ class RiotHelper:
             )
             return []
 
-    # Get a summoner by the puuid
+    async def get_account_by_tag(self, name: str, tag: str) -> Optional[AccountDTO]:
+        """
+        Fetch an account from the Riot-API by name and tag.
+        :param name: Name of the account
+        :param tag: Tag of the account (4 characters)
+        :return: AccountDTO object
+        """
+        try:
+            tag = tag.replace("#", "")
+            app_logger.debug(
+                f"Fetching Account [{name} - {tag}] by name-tag with Riot-API"
+            )
+            url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}"
+            return await self._make_request(url, AccountDTO)
+
+        except Exception as e:
+            app_logger.error(
+                f"Error while fetching Account [{name} - {tag}] with Riot-API: {e}"
+            )
+            return None
+
+    async def get_account_by_puuid(self, puuid: str) -> Optional[AccountDTO]:
+        """
+        Fetch an account from the Riot-API by puuid.
+        :param puuid: The puuid of the account
+        :return: AccountDTO object
+        """
+        try:
+            app_logger.debug(f"Fetching Account [{puuid}] by puuid with Riot-API")
+            url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
+            return await self._make_request(url, AccountDTO)
+
+        except Exception as e:
+            app_logger.error(
+                f"Error while fetching Account [{puuid}] with Riot-API: {e}"
+            )
+            return None
+
     async def get_summoner_by_puuid_riot(
         self, puuid: str, account: Optional[AccountDTO] = None
-    ):
+    ) -> Optional[SummonerDTODB]:
+        """
+        Fetch a summoner from the Riot-API by puuid. Additionally, the account is also fetched to get the gameName and
+        tagLine. The summoner and account data is then merged into a SummonerDTODB object.
+        :param puuid: The puuid of the summoner to fetch
+        :param account: Optionally provide the account directly doesn't need to be fetched again
+        :return: SummonerDTODB object with the merged data
+        """
         try:
             app_logger.debug(f"Fetching Summoner [{puuid}] by puuid with Riot-API")
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
-            data = await self._make_request(url)
-            # validate
-            summonerDTO = SummonerDTO.model_validate(data)
+            summonerDTO = await self._make_request(url, SummonerDTO)
             # check if account provided
             if not account:
                 account = await self.get_account_by_puuid(summonerDTO.puuid)
             if account:
                 dict_concat = summonerDTO.model_dump() | account.model_dump()
-                summonerDTODB = SummonerDTODB.model_validate(dict_concat)
-                return summonerDTODB
+                return SummonerDTODB.model_validate(dict_concat)
             else:
                 raise ValueError("Account not found")
 
@@ -120,39 +196,16 @@ class RiotHelper:
             )
             return None
 
-    # Get an account by the name and tag
-    async def get_account_by_tag(self, name: str, tag: str):
-        try:
-            tag = tag.replace("#", "")
-            app_logger.debug(f"Fetching Account [{name} - {tag}] by name-tag with Riot-API")
-            url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}"
-            data = await self._make_request(url)
-            # validate
-            return AccountDTO.model_validate(data)
-
-        except Exception as e:
-            app_logger.error(
-                f"Error while fetching Account [{name} - {tag}] with Riot-API: {e}"
-            )
-            return None
-
-    # Get an account by the puuid
-    async def get_account_by_puuid(self, puuid: str):
-        try:
-            app_logger.debug(f"Fetching Account [{puuid}] by puuid with Riot-API")
-            url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
-            data = await self._make_request(url)
-            # validate
-            return AccountDTO.model_validate(data)
-
-        except Exception as e:
-            app_logger.error(
-                f"Error while fetching Account [{puuid}] with Riot-API: {e}"
-            )
-            return None
-
-    # Fetch a summoner by providing the name and tag of the account
-    async def get_summoner_by_account_tag(self, name: str, tag: str):
+    async def get_summoner_by_account_tag(
+        self, name: str, tag: str
+    ) -> Optional[SummonerDTODB]:
+        """
+        Fetch a summoner from the Riot-API by name and tag. The account is fetched first and then the summoner is
+        fetched by the puuid.
+        :param name: Name of the account
+        :param tag: Tag of the account (4 characters)
+        :return: SummonerDTODB object
+        """
         try:
             account = await self.get_account_by_tag(name, tag)
             if account:
@@ -165,14 +218,21 @@ class RiotHelper:
             )
             return None
 
-    async def get_champion_mastery_by_puuid_riot(self, puuid: str) -> List[Dict]:
+    async def get_champion_mastery_by_puuid_riot(
+        self, puuid: str
+    ) -> Sequence[ChampionMasteryDTO]:
+        """
+        Fetch the Champion Mastery for all champions of a summoner by puuid.
+        :param puuid: The puuid of the summoner
+        :return: List of Champion Mastery objects
+        """
         try:
             app_logger.debug(
                 f"Fetching Champion Mastery for Summoner [{puuid}] with Riot-API"
             )
             url = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}"
             data = await self._make_request(url)
-            return [champion for champion in data]
+            return [ChampionMasteryDTO.model_validate(mastery) for mastery in data]
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Champion Mastery for Summoner [{puuid}] with Riot-API: {e}"
@@ -185,6 +245,13 @@ class RiotHelper:
         patch="latest",
         locale="en-US",
     ) -> Sequence[ItemDTO] | Sequence[ChampionDTO]:
+        """
+        Fetch a resource from the Meraki-CDN. The resource can be either items or champions.
+        :param resource_type: Can be either "items" or "champions"
+        :param patch: The Game Patch to fetch the resource for. Default is "latest"
+        :param locale: The locale to fetch the resource for. Default is "en-US"
+        :return: CDN resource as a list of pydantic models
+        """
         app_logger.debug(f"Fetching {resource_type} with Meraki-CDN")
         raw_data = await self._make_request(
             f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/{resource_type}.json"
@@ -225,6 +292,9 @@ async def main():
     # match
     match = await rh.get_match_riot(matchlist[0])
     print(match)
+    # Mastery
+    mastery = await rh.get_champion_mastery_by_puuid_riot(summoner.puuid)
+    print(mastery[0])
 
 
 if __name__ == "__main__":
