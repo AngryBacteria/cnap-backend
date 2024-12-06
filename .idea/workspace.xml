@@ -5,10 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="hotfix task (no filter was supplied)">
-      <change afterPath="$PROJECT_DIR$/models/ChampionMasteryDTO.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_db_helper.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_riot_helper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/DBHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DBHelper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/RiotHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/RiotHelper.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,30 +46,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.DBHelper.executor&quot;: &quot;Run&quot;,
-    &quot;Python.GameDataTask.executor&quot;: &quot;Run&quot;,
-    &quot;Python.MainTask.executor&quot;: &quot;Run&quot;,
-    &quot;Python.PeriodicUpdates.executor&quot;: &quot;Run&quot;,
-    &quot;Python.RiotHelper.executor&quot;: &quot;Run&quot;,
-    &quot;Python.SummonerTasks.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.wa.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;mongodb-python&quot;,
-    &quot;last_opened_file_path&quot;: &quot;S:/documents/programming/python/cnap-backend&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.ApplicationConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.DBHelper.executor": "Run",
+    "Python.GameDataTask.executor": "Run",
+    "Python.MainTask.executor": "Run",
+    "Python.PeriodicUpdates.executor": "Run",
+    "Python.RiotHelper.executor": "Run",
+    "Python.SummonerTasks.executor": "Run",
+    "Python.test.executor": "Run",
+    "Python.test_main.executor": "Run",
+    "Python.wa.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "mongodb-python",
+    "last_opened_file_path": "/Users/gujen1/PycharmProjects/cnap-backend/tests",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.github.copilot.settings.ApplicationConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tests" />
+    </key>
+  </component>
   <component name="RunManager" selected="Python.RiotHelper">
     <configuration name="DBHelper" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="cnap-backend" />

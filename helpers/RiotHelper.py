@@ -67,7 +67,7 @@ class RiotHelper:
             raise ValueError("No data returned")
 
         if model:
-            return model.validate(json_data)
+            return model.model_validate(json_data)
         else:
             return json_data
 
