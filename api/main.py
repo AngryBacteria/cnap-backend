@@ -55,7 +55,7 @@ async def get_summoners(
 
 @app.get("/items")
 async def get_items(base_filter: Annotated[BaseFilter, Query()]) -> list[ItemDTO]:
-    db_response = await dbh.get_items(base_filter)
+    db_response = await dbh.generic_get(base_filter, dbh.item_collection, ItemDTO)
     db_items = db_response if len(db_response) > 0 else None
     if db_items:
         return db_items
@@ -67,7 +67,9 @@ async def get_items(base_filter: Annotated[BaseFilter, Query()]) -> list[ItemDTO
 async def get_champions(
     base_filter: Annotated[BaseFilter, Query()],
 ) -> list[ChampionDTO]:
-    db_response = await dbh.get_champions(base_filter)
+    db_response = await dbh.generic_get(
+        base_filter, dbh.champion_collection, ChampionDTO
+    )
     db_champions = db_response if len(db_response) > 0 else None
     if db_champions:
         return db_champions

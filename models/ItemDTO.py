@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from models.GlobalPydanticConfig import GLOBAL_PYDANTIC_CONFIG
 
 
-# TODO expand
 class ItemDTO(BaseModel):
     model_config = GLOBAL_PYDANTIC_CONFIG
     name: str

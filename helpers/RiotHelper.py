@@ -2,7 +2,7 @@ import asyncio
 import os
 from collections.abc import Sequence
 from threading import Lock
-from typing import Optional, Dict, Literal, TypeVar, Any
+from typing import Optional, Dict, Literal, TypeVar, Any, overload
 
 import httpx
 from asynciolimiter import Limiter
@@ -13,7 +13,11 @@ from helpers.Logger import app_logger
 from models.ChampionMasteryDTO import ChampionMasteryDTO
 from models.AccountDTO import AccountDTO
 from models.ChampionDTO import ChampionDTO
+from models.GameModeDTO import GameModeDTO
+from models.GameTypeDTO import GameTypeDTO
 from models.ItemDTO import ItemDTO
+from models.MapDTO import MapDTO
+from models.QueueDTO import QueueDTO
 from models.SummonerDTO import SummonerDTO
 from models.SummonerDTODB import SummonerDTODB
 
@@ -49,16 +53,25 @@ class RiotHelper:
 
     GenericModel = TypeVar("GenericModel", bound=BaseModel)
 
+    @overload
     async def _make_request(
-        self, url: str, model: Optional[type[GenericModel]] = None
-    ) -> GenericModel | Any:
-        """
-        Make a request to the given URL and return the response. If a pydantic model is provided, validate the
-        response with the model for better type safety.
-        :param url: The url to make the request to
-        :param model: The pydantic model to validate the response with
-        :return: Parsed JSON data or the validated pydantic model
-        """
+        self, url: str, model: type[GenericModel]
+    ) -> GenericModel: ...
+
+    @overload
+    async def _make_request(
+        self, url: str, model: type[GenericModel], model_list: bool
+    ) -> list[GenericModel]: ...
+
+    @overload
+    async def _make_request(self, url: str) -> Any: ...
+
+    async def _make_request(
+        self,
+        url: str,
+        model: type[GenericModel] | None = None,
+        model_list: bool = False,
+    ) -> GenericModel | list[GenericModel] | Any:
         await self.limiter.wait()
         response = await self.client.get(url)
         response.raise_for_status()
@@ -66,10 +79,12 @@ class RiotHelper:
         if json_data is None:
             raise ValueError("No data returned")
 
-        if model:
-            return model.model_validate(json_data)
-        else:
-            return json_data
+        if model is not None:
+            if isinstance(json_data, list) and model_list:
+                return [model.model_validate(data) for data in json_data]
+            else:
+                return model.model_validate(json_data)
+        return json_data
 
     # TODO basic pydantic model for match
     async def get_match_riot(self, match_id: str) -> Optional[Dict[str, Any]]:
@@ -81,8 +96,7 @@ class RiotHelper:
         try:
             app_logger.debug(f"Fetching Match [{match_id}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}"
-            data = await self._make_request(url)
-            return data
+            return await self._make_request(url)
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Match [{match_id}] with Riot-API: {e}"
@@ -99,8 +113,7 @@ class RiotHelper:
         try:
             app_logger.debug(f"Fetching Timeline [{timeline_id}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{timeline_id}/timeline"
-            data = await self._make_request(url)
-            return data
+            return await self._make_request(url)
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Timeline [{timeline_id}] with Riot-API: {e}"
@@ -218,6 +231,66 @@ class RiotHelper:
             )
             return None
 
+    CDNResourceDTO = TypeVar(
+        "CDNResourceDTO",
+        ItemDTO,
+        ChampionDTO,
+        GameModeDTO,
+        GameTypeDTO,
+        MapDTO,
+        QueueDTO,
+    )
+
+    async def get_cdn_resource(
+        self,
+        resource_type: Literal[
+            "items", "champions", "gameModes", "gameTypes", "maps", "queues"
+        ],
+        patch="latest",
+        locale="en-US",
+    ) -> Sequence[ItemDTO] | Sequence[ChampionDTO] | Sequence[GameModeDTO] | Sequence[GameTypeDTO] | Sequence[MapDTO] | Sequence[QueueDTO]:
+        """
+        Fetch a resource from the Meraki-CDN. The resource can be either items or champions.
+        :param resource_type: Can be either "items" or "champions"
+        :param patch: The Game Patch to fetch the resource for. Default is "latest"
+        :param locale: The locale to fetch the resource for. Default is "en-US"
+        :return: CDN resource as a list of pydantic models
+        """
+        app_logger.debug(f"Fetching {resource_type} with Meraki-CDN")
+
+        if resource_type in ["items", "champions"]:
+            raw_data = await self._make_request(
+                f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/{resource_type}.json"
+            )
+        else:
+            raw_data = await self._make_request(
+                f"https://static.developer.riotgames.com/docs/lol/{resource_type}.json"
+            )
+
+        if resource_type == "champions":
+            champions = []
+            for key, value in raw_data.items():
+                champion = ChampionDTO.model_validate(value)
+                champions.append(champion)
+
+            return champions
+        elif resource_type == "items":
+            items = []
+            for key, value in raw_data.items():
+                item = ItemDTO.model_validate(value)
+                items.append(item)
+
+            return items
+
+        elif resource_type == "gameModes":
+            return [GameModeDTO.model_validate(data) for data in raw_data]
+        elif resource_type == "gameTypes":
+            return [GameTypeDTO.model_validate(data) for data in raw_data]
+        elif resource_type == "maps":
+            return [MapDTO.model_validate(data) for data in raw_data]
+        elif resource_type == "queues":
+            return [QueueDTO.model_validate(data) for data in raw_data]
+
     async def get_champion_mastery_by_puuid_riot(
         self, puuid: str
     ) -> Sequence[ChampionMasteryDTO]:
@@ -231,45 +304,12 @@ class RiotHelper:
                 f"Fetching Champion Mastery for Summoner [{puuid}] with Riot-API"
             )
             url = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}"
-            data = await self._make_request(url)
-            return [ChampionMasteryDTO.model_validate(mastery) for mastery in data]
+            return await self._make_request(url, ChampionMasteryDTO, True)
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Champion Mastery for Summoner [{puuid}] with Riot-API: {e}"
             )
             return []
-
-    async def get_cdn_resource(
-        self,
-        resource_type: Literal["items", "champions"],
-        patch="latest",
-        locale="en-US",
-    ) -> Sequence[ItemDTO] | Sequence[ChampionDTO]:
-        """
-        Fetch a resource from the Meraki-CDN. The resource can be either items or champions.
-        :param resource_type: Can be either "items" or "champions"
-        :param patch: The Game Patch to fetch the resource for. Default is "latest"
-        :param locale: The locale to fetch the resource for. Default is "en-US"
-        :return: CDN resource as a list of pydantic models
-        """
-        app_logger.debug(f"Fetching {resource_type} with Meraki-CDN")
-        raw_data = await self._make_request(
-            f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/{resource_type}.json"
-        )
-        if resource_type == "champions":
-            champions = []
-            for key, value in raw_data.items():
-                champion = ChampionDTO.model_validate(value)
-                champions.append(champion)
-
-            return champions
-        else:
-            items = []
-            for key, value in raw_data.items():
-                item = ItemDTO.model_validate(value)
-                items.append(item)
-
-            return items
 
 
 async def main():
@@ -294,7 +334,7 @@ async def main():
     print(match)
     # Mastery
     mastery = await rh.get_champion_mastery_by_puuid_riot(summoner.puuid)
-    print(mastery[0])
+    print(mastery[0].puuid)
 
 
 if __name__ == "__main__":

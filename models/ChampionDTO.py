@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 from models.GlobalPydanticConfig import GLOBAL_PYDANTIC_CONFIG
 
 
-# TODO expand
 class ChampionDTO(BaseModel):
     model_config = GLOBAL_PYDANTIC_CONFIG
     id: int = Field(

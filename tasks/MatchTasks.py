@@ -3,7 +3,6 @@ from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 
 
-# TODO add champion / item / new summoners updates
 class MatchTasks:
     def __init__(self):
         self.db_helper = DBHelper()

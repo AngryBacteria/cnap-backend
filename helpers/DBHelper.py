@@ -1,7 +1,7 @@
 import asyncio
 import os
 from threading import Lock
-from typing import Dict, Any, Mapping, Literal, Union, Type
+from typing import Dict, Any, Mapping, Literal, Union, Type, TypeVar, overload
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import (
@@ -13,9 +13,8 @@ from pydantic import BaseModel, Field
 from pymongo import UpdateOne
 
 from helpers.Logger import app_logger
-from models.ChampionDTO import ChampionDTO
-from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
+
 
 # TODO replace by model_construct()
 
@@ -66,11 +65,17 @@ class DBHelper:
     _lock: Lock = Lock()
     mongo_client: AsyncIOMotorClient[Mapping[str, Any]]
     database: AsyncIOMotorDatabase[Mapping[str, Any]]
+    # changing
     match_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     summoner_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     timeline_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    # static
     champion_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     item_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    maps_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    game_modes_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    game_types_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    queues_collection: AsyncIOMotorCollection[Mapping[str, Any]]
 
     def __new__(cls) -> Any:
         if cls._instance is None:
@@ -88,20 +93,31 @@ class DBHelper:
                         cls._instance.database = (
                             cls._instance.mongo_client.get_database("cnap")
                         )
+                        # changing
                         cls._instance.match_collection = (
                             cls._instance.database.get_collection("match_v5")
                         )
-                        cls._instance.summoner_collection = (
-                            cls._instance.database.get_collection("summoner")
-                        )
                         cls._instance.timeline_collection = (
                             cls._instance.database.get_collection("timeline_v5")
+                        )
+                        # static
+                        cls._instance.summoner_collection = (
+                            cls._instance.database.get_collection("summoner")
                         )
                         cls._instance.champion_collection = (
                             cls._instance.database.get_collection("champion")
                         )
                         cls._instance.item_collection = (
                             cls._instance.database.get_collection("item")
+                        )
+                        cls._instance.game_modes_collection = (
+                            cls._instance.database.get_collection("game_modes")
+                        )
+                        cls._instance.game_types_collection = (
+                            cls._instance.database.get_collection("game_types")
+                        )
+                        cls._instance.queues_collection = (
+                            cls._instance.database.get_collection("queues")
                         )
 
                     else:
@@ -223,36 +239,42 @@ class DBHelper:
             app_logger.error("Error getting Summoners with MongoDB: ", error)
             return []
 
-    # TODO filter
-    async def get_champions(self, champion_filter: BaseFilter):
+    GenericModel = TypeVar("GenericModel", bound=BaseModel)
+
+    @overload
+    async def generic_get(
+        self, base_filter: BaseFilter, collection: AsyncIOMotorCollection
+    ) -> list[dict]: ...
+
+    @overload
+    async def generic_get(
+        self,
+        base_filter: BaseFilter,
+        collection: AsyncIOMotorCollection,
+        model: type[GenericModel],
+    ) -> list[GenericModel]: ...
+
+    async def generic_get(
+        self,
+        base_filter: BaseFilter,
+        collection: AsyncIOMotorCollection,
+        model: type[GenericModel] | None = None,
+    ) -> list[GenericModel] | list[Dict]:
         try:
-            app_logger.debug("Getting Champion data from DB")
+            app_logger.debug("Getting data from DB")
 
             cursor = (
-                self.champion_collection.find({}, {"_id": 0})
-                .skip(champion_filter.offset)
-                .limit(champion_filter.limit)
+                collection.find({}, {"_id": 0})
+                .skip(base_filter.offset)
+                .limit(base_filter.limit)
             )
-            champions_raw: list[ChampionDTO] = await cursor.to_list(length=None)
-            return [ChampionDTO.model_validate(champion) for champion in champions_raw]
+            data_raw = await cursor.to_list(length=None)
+            if model:
+                return [model.model_validate(data) for data in data_raw]
+            else:
+                return data_raw
         except Exception as error:
-            app_logger.error("Error getting Champions with MongoDB: ", error)
-            return []
-
-    # TODO filter
-    async def get_items(self, item_filter: BaseFilter):
-        try:
-            app_logger.debug("Getting Item data from DB")
-
-            cursor = (
-                self.item_collection.find({}, {"_id": 0})
-                .skip(item_filter.offset)
-                .limit(item_filter.limit)
-            )
-            items_raw: list[ItemDTO] = await cursor.to_list(length=None)
-            return [ItemDTO.model_validate(item) for item in items_raw]
-        except Exception as error:
-            app_logger.error("Error getting Items with MongoDB: ", error)
+            app_logger.error("Error getting data with MongoDB: ", error)
             return []
 
     async def generic_upsert(

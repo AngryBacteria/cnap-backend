@@ -1,34 +1,38 @@
 import pytest
 
 from helpers.DBHelper import DBHelper, BaseFilter, SummonerFilter, BaseMatchFilter
+from models.ChampionDTO import ChampionDTO
+from models.ItemDTO import ItemDTO
 
-#todo split into multiple files
 
-angrybacteria_puuid = "zk1tF-l0TT1SrT9SbUmofKLT4R2gLKxzhGSyNuuxTCbmjr6dOqTCw1GcYrHoRp5DV2f5M17GMLPEFw"
-bribri_puuid = "Sbji7x0flde3VDc3n5u5UGrzG6pF_jqFQuNlgAig6JsTIhDnDRGBuN8I5O9ZBQIqoRsIm2esKq8UWg"
+angrybacteria_puuid = (
+    "zk1tF-l0TT1SrT9SbUmofKLT4R2gLKxzhGSyNuuxTCbmjr6dOqTCw1GcYrHoRp5DV2f5M17GMLPEFw"
+)
+bribri_puuid = (
+    "Sbji7x0flde3VDc3n5u5UGrzG6pF_jqFQuNlgAig6JsTIhDnDRGBuN8I5O9ZBQIqoRsIm2esKq8UWg"
+)
 
 match1_id = "EUW1_7084514418"
 match2_id = "EUW1_7075264366"
+
 
 @pytest.mark.asyncio
 async def test_queries():
     dbh = DBHelper()
     # champion tests
-    champions = await dbh.get_champions(BaseFilter())
+    champions = await dbh.generic_get(
+        BaseFilter(), dbh.champion_collection, ChampionDTO
+    )
     assert len(champions) > 0
 
     # item tests
-    items = await dbh.get_items(BaseFilter())
+    items = await dbh.generic_get(BaseFilter(), dbh.item_collection, ItemDTO)
     assert len(items) > 0
 
     # summoner tests
     summoners = await dbh.get_summoners(SummonerFilter())
     assert len(summoners) > 0
-    summoners = await dbh.get_summoners(
-        SummonerFilter(
-            puuid=angrybacteria_puuid
-        )
-    )
+    summoners = await dbh.get_summoners(SummonerFilter(puuid=angrybacteria_puuid))
     assert len(summoners) == 1
     assert summoners[0].gameName == "AngryBacteria"
     summoners = await dbh.get_summoners(
@@ -50,9 +54,7 @@ async def test_queries():
     )
     assert len(matches) == 0
     # multiple match id filtering
-    matches = await dbh.get_matches(
-        BaseMatchFilter(match_ids=[match1_id, match2_id])
-    )
+    matches = await dbh.get_matches(BaseMatchFilter(match_ids=[match1_id, match2_id]))
     assert len(matches) == 2
     assert match1_id in [match["metadata"]["matchId"] for match in matches]
     assert match2_id in [match["metadata"]["matchId"] for match in matches]
@@ -65,17 +67,11 @@ async def test_queries():
     assert all(match["info"]["gameMode"] != "CLASSIC" for match in matches)
     # filtering by participant
     matches = await dbh.get_matches(
-        BaseMatchFilter(
-            participant_puuids=[
-                angrybacteria_puuid
-            ]
-        )
+        BaseMatchFilter(participant_puuids=[angrybacteria_puuid])
     )
     assert len(matches) > 0
     assert all(
-        angrybacteria_puuid
-        in match["metadata"]["participants"]
-        for match in matches
+        angrybacteria_puuid in match["metadata"]["participants"] for match in matches
     )
     matches = await dbh.get_matches(
         BaseMatchFilter(participant_puuids=["this puuid does not exist"])
@@ -92,15 +88,9 @@ async def test_queries():
     )
     assert len(matches) > 0
     assert all(
-        angrybacteria_puuid
-        in match["metadata"]["participants"]
-        for match in matches
+        angrybacteria_puuid in match["metadata"]["participants"] for match in matches
     )
-    assert all(
-        bribri_puuid
-        in match["metadata"]["participants"]
-        for match in matches
-    )
+    assert all(bribri_puuid in match["metadata"]["participants"] for match in matches)
     # filtering by queue id
     matches = await dbh.get_matches(BaseMatchFilter(queue=400))
     assert all(match["info"]["queueId"] == 400 for match in matches)
@@ -113,15 +103,13 @@ async def test_queries():
         BaseMatchFilter(
             mode="CLASSIC",
             queue=400,
-            participant_puuids=[
-                angrybacteria_puuid
-            ],
+            participant_puuids=[angrybacteria_puuid],
         )
     )
     assert all(match["info"]["gameMode"] == "CLASSIC" for match in matches)
     assert all(match["info"]["queueId"] == 400 for match in matches)
     assert all(
-        angrybacteria_puuid
-        in match["metadata"]["participants"]
-        for match in matches
+        angrybacteria_puuid in match["metadata"]["participants"] for match in matches
     )
+
+    # TODO static cdn data
