@@ -7,3 +7,5 @@ asynciolimiter==1.1.0.post3
 pydantic==2.9.2
 ruff==0.7.4
 mypy==1.13.0
+pytest==8.3.3
+pytest-asyncio==0.24.0

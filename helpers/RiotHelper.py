@@ -2,7 +2,7 @@ import asyncio
 import os
 from collections.abc import Sequence
 from threading import Lock
-from typing import Optional, Dict, Literal, TypeVar, Any, overload
+from typing import Optional, Dict, TypeVar, Any, overload
 
 import httpx
 from asynciolimiter import Limiter
@@ -231,65 +231,51 @@ class RiotHelper:
             )
             return None
 
-    CDNResourceDTO = TypeVar(
-        "CDNResourceDTO",
-        ItemDTO,
-        ChampionDTO,
-        GameModeDTO,
-        GameTypeDTO,
-        MapDTO,
-        QueueDTO,
-    )
+    async def get_items(self, patch="latest", locale="en-US") -> Sequence[ItemDTO]:
+        raw_data = await self._make_request(
+            f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/items.json"
+        )
+        items = []
+        for key, value in raw_data.items():
+            item = ItemDTO.model_validate(value)
+            items.append(item)
+        return items
 
-    async def get_cdn_resource(
-        self,
-        resource_type: Literal[
-            "items", "champions", "gameModes", "gameTypes", "maps", "queues"
-        ],
-        patch="latest",
-        locale="en-US",
-    ) -> Sequence[ItemDTO] | Sequence[ChampionDTO] | Sequence[GameModeDTO] | Sequence[GameTypeDTO] | Sequence[MapDTO] | Sequence[QueueDTO]:
-        """
-        Fetch a resource from the Meraki-CDN. The resource can be either items or champions.
-        :param resource_type: Can be either "items" or "champions"
-        :param patch: The Game Patch to fetch the resource for. Default is "latest"
-        :param locale: The locale to fetch the resource for. Default is "en-US"
-        :return: CDN resource as a list of pydantic models
-        """
-        app_logger.debug(f"Fetching {resource_type} with Meraki-CDN")
+    async def get_champions(
+        self, patch="latest", locale="en-US"
+    ) -> Sequence[ChampionDTO]:
+        raw_data = await self._make_request(
+            f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/champions.json"
+        )
+        champions = []
+        for key, value in raw_data.items():
+            item = ChampionDTO.model_validate(value)
+            champions.append(item)
+        return champions
 
-        if resource_type in ["items", "champions"]:
-            raw_data = await self._make_request(
-                f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/{resource_type}.json"
-            )
-        else:
-            raw_data = await self._make_request(
-                f"https://static.developer.riotgames.com/docs/lol/{resource_type}.json"
-            )
+    async def get_game_modes(self) -> Sequence[GameModeDTO]:
+        raw_data = await self._make_request(
+            "https://static.developer.riotgames.com/docs/lol/gameModes.json"
+        )
+        return [GameModeDTO.model_validate(data) for data in raw_data]
 
-        if resource_type == "champions":
-            champions = []
-            for key, value in raw_data.items():
-                champion = ChampionDTO.model_validate(value)
-                champions.append(champion)
+    async def get_game_types(self) -> Sequence[GameTypeDTO]:
+        raw_data = await self._make_request(
+            "https://static.developer.riotgames.com/docs/lol/gameTypes.json"
+        )
+        return [GameTypeDTO.model_validate(data) for data in raw_data]
 
-            return champions
-        elif resource_type == "items":
-            items = []
-            for key, value in raw_data.items():
-                item = ItemDTO.model_validate(value)
-                items.append(item)
+    async def get_maps(self) -> Sequence[MapDTO]:
+        raw_data = await self._make_request(
+            "https://static.developer.riotgames.com/docs/lol/maps.json"
+        )
+        return [MapDTO.model_validate(data) for data in raw_data]
 
-            return items
-
-        elif resource_type == "gameModes":
-            return [GameModeDTO.model_validate(data) for data in raw_data]
-        elif resource_type == "gameTypes":
-            return [GameTypeDTO.model_validate(data) for data in raw_data]
-        elif resource_type == "maps":
-            return [MapDTO.model_validate(data) for data in raw_data]
-        elif resource_type == "queues":
-            return [QueueDTO.model_validate(data) for data in raw_data]
+    async def get_queues(self) -> Sequence[QueueDTO]:
+        raw_data = await self._make_request(
+            "https://static.developer.riotgames.com/docs/lol/queues.json"
+        )
+        return [QueueDTO.model_validate(data) for data in raw_data]
 
     async def get_champion_mastery_by_puuid_riot(
         self, puuid: str
@@ -315,7 +301,7 @@ class RiotHelper:
 async def main():
     rh = RiotHelper()
     # cdn
-    champions = await rh.get_cdn_resource("champions")
+    champions = await rh.get_champions("champions")
     print(champions[0].name)
     items = await rh.get_cdn_resource("items")
     print(items[0].name)

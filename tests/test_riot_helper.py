@@ -1,5 +1,3 @@
-from typing import Literal
-
 import pytest
 
 from helpers.RiotHelper import RiotHelper
@@ -36,7 +34,7 @@ async def test_queries():
     assert match["metadata"]["matchId"] == match1_id
     match = await rh.get_match_riot(match2_id)
     assert match["metadata"]["matchId"] == match2_id
-    match = await rh.get_match_riot("does not exist")
+    match = await rh.get_match_riot("does-not-exist")
     assert match is None
 
     # timeline
@@ -46,28 +44,44 @@ async def test_queries():
     timeline = await rh.get_timeline_riot(match2_id)
     assert timeline["metadata"]["matchId"] == match2_id
     assert timeline is not None
-    timeline = await rh.get_timeline_riot("does not exist")
+    timeline = await rh.get_timeline_riot("does-not-exist")
     assert timeline is None
 
     # matchlist
     matchlist = await rh.get_match_list_riot(angrybacteria_puuid)
     assert len(matchlist) > 0
     assert matchlist is not None
-    matchlist = await rh.get_match_list_riot("does not exist")
+    matchlist = await rh.get_match_list_riot("does-not-exist")
     assert len(matchlist) == 0
 
-    # cdn
-    resource_types: list[
-        Literal["items", "champions", "gameModes", "gameTypes", "maps", "queues"]
-    ] = ["items", "champions", "gameModes", "gameTypes", "maps", "queues"]
-    for resource_type in resource_types:
-        resources = await rh.get_cdn_resource(resource_type)
-        assert resources is not None
-        assert len(resources) > 0
+    # CDN
+    items = await rh.get_items()
+    assert items is not None
+    assert len(items) > 0
+
+    champions = await rh.get_champions()
+    assert champions is not None
+    assert len(champions) > 0
+
+    game_modes = await rh.get_game_modes()
+    assert game_modes is not None
+    assert len(game_modes) > 0
+
+    game_types = await rh.get_game_types()
+    assert game_types is not None
+    assert len(game_types) > 0
+
+    maps = await rh.get_maps()
+    assert maps is not None
+    assert len(maps) > 0
+
+    queues = await rh.get_queues()
+    assert queues is not None
+    assert len(queues) > 0
 
     # mastery
-    mastery = await rh.get_mastery_riot(angrybacteria_puuid)
+    mastery = await rh.get_champion_mastery_by_puuid_riot(angrybacteria_puuid)
     assert mastery is not None
     assert len(mastery) > 0
-    mastery = await rh.get_mastery_riot("does not exist")
+    mastery = await rh.get_champion_mastery_by_puuid_riot("does-not-exist")
     assert len(mastery) == 0

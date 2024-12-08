@@ -1,7 +1,7 @@
 import asyncio
 import os
 from threading import Lock
-from typing import Dict, Any, Mapping, Literal, Union, Type, TypeVar, overload
+from typing import Dict, Any, Mapping, Literal, Union, Type, TypeVar, overload, Sequence
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import (
@@ -115,6 +115,9 @@ class DBHelper:
                         )
                         cls._instance.game_types_collection = (
                             cls._instance.database.get_collection("game_types")
+                        )
+                        cls._instance.maps_collection = (
+                            cls._instance.database.get_collection("maps")
                         )
                         cls._instance.queues_collection = (
                             cls._instance.database.get_collection("queues")
@@ -279,7 +282,7 @@ class DBHelper:
 
     async def generic_upsert(
         self,
-        data: Union[list[dict], list[BaseModel]],
+        data: Union[Sequence[dict], Sequence[BaseModel]],
         key_field: str,
         collection: AsyncIOMotorCollection,
         data_name="Generic Data",
