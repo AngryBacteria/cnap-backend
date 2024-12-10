@@ -5,9 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="hotfix task (no filter was supplied)">
-      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/MainTask.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/MainTask.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/DBHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DBHelper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_db_helper.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_helper.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -247,7 +247,11 @@
       <workItem from="1733411899286" duration="4814000" />
       <workItem from="1733646682181" duration="6000" />
       <workItem from="1733677611316" duration="1770000" />
-      <workItem from="1733847473896" duration="927000" />
+      <workItem from="1733847473896" duration="1404000" />
+      <workItem from="1733850506792" duration="1947000" />
+      <workItem from="1733852954483" duration="235000" />
+      <workItem from="1733853520699" duration="5434000" />
+      <workItem from="1733859191893" duration="610000" />
     </task>
     <task id="LOCAL-00001" summary="added timeline">
       <option name="closed" value="true" />

@@ -16,9 +16,6 @@ from helpers.Logger import app_logger
 from models.SummonerDTODB import SummonerDTODB
 
 
-# TODO replace by model_construct()
-
-
 class BaseFilter(BaseModel):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
@@ -211,7 +208,7 @@ class DBHelper:
             )
             return await cursor.to_list(length=None)
         except Exception as error:
-            app_logger.error("Error getting {identifier} with MongoDB: ", error)
+            app_logger.error(f"Error getting {identifier} with MongoDB: ", error)
             return []
 
     async def get_summoners(
