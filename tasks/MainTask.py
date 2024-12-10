@@ -14,6 +14,10 @@ async def interval_update(iteration, interval_time):
         await summoner_tasks.update_summoner_data()
         await game_data_task.update_items()
         await game_data_task.update_champions()
+        await game_data_task.update_game_modes()
+        await game_data_task.update_game_types()
+        await game_data_task.update_maps()
+        await game_data_task.update_queues()
     await match_tasks.update_match_data(69, 0)
     await asyncio.sleep(interval_time)
 

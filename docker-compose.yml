@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  cnap-backend-api:
+    image: cnap-backend
+    container_name: cnap-backend-api
+    environment:
+      RUN_TYPE: api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  cnap-backend-task:
+    image: cnap-backend
+    container_name: cnap-backend-task
+    environment:
+      RUN_TYPE: task
+    restart: unless-stopped

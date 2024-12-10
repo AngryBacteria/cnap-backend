@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="hotfix task (no filter was supplied)">
+      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/MainTask.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/MainTask.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,7 +75,7 @@
       <recent name="$PROJECT_DIR$/tests" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.DBHelper">
+  <component name="RunManager" selected="Python.GameDataTask">
     <configuration name="DBHelper" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="cnap-backend" />
       <option name="ENV_FILES" value="" />
@@ -191,10 +193,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.GameDataTask" />
         <item itemvalue="Python.DBHelper" />
         <item itemvalue="Python.RiotHelper" />
         <item itemvalue="Python.MainTask" />
-        <item itemvalue="Python.GameDataTask" />
         <item itemvalue="Python.SummonerTasks" />
       </list>
     </recent_temporary>
@@ -244,6 +246,8 @@
       <workItem from="1732811833848" duration="88000" />
       <workItem from="1733411899286" duration="4814000" />
       <workItem from="1733646682181" duration="6000" />
+      <workItem from="1733677611316" duration="1770000" />
+      <workItem from="1733847473896" duration="927000" />
     </task>
     <task id="LOCAL-00001" summary="added timeline">
       <option name="closed" value="true" />
@@ -296,7 +300,7 @@
     <SUITE FILE_PATH="coverage/cnap_backend$SummonerTasks.coverage" NAME="SummonerTasks Coverage Results" MODIFIED="1732811913240" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tasks" />
     <SUITE FILE_PATH="coverage/cnap_backend$MainTask.coverage" NAME="MainTask Coverage Results" MODIFIED="1733413596227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tasks" />
     <SUITE FILE_PATH="coverage/cnap_backend$RiotHelper.coverage" NAME="RiotHelper Coverage Results" MODIFIED="1733603789541" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/helpers" />
-    <SUITE FILE_PATH="coverage/cnap_backend$GameDataTask.coverage" NAME="GameDataTask Coverage Results" MODIFIED="1733413546986" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tasks" />
+    <SUITE FILE_PATH="coverage/cnap_backend$GameDataTask.coverage" NAME="GameDataTask Coverage Results" MODIFIED="1733847955173" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tasks" />
     <SUITE FILE_PATH="coverage/cnap_backend$test_main.coverage" NAME="test_main Coverage Results" MODIFIED="1731086729614" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/api" />
     <SUITE FILE_PATH="coverage/cnap_backend$test.coverage" NAME="test Coverage Results" MODIFIED="1731685005583" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/cnap_backend$PeriodicUpdates.coverage" NAME="PeriodicUpdates Coverage Results" MODIFIED="1731687779063" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tasks" />
