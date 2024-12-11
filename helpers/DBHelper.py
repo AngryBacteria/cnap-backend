@@ -16,17 +16,21 @@ from helpers.Logger import app_logger
 from models.SummonerDTODB import SummonerDTODB
 
 
-class BaseFilter(BaseModel):
+class BasicFilter(BaseModel):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
+    project: dict = Field(default={"_id": 0}, description="Fields to return")
+    filter: dict = Field(default={}, description="Filter to apply")
 
 
-class BaseMatchFilter(BaseFilter):
+class BasicMatchFilter(BaseModel):
+    offset: int = Field(default=0, ge=0, description="Number of items to skip")
+    limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
     participant_puuids: list[str] = Field(
-        default_factory=list, description="List of participant PUUIDs to filter by"
+        default=[], description="List of participant PUUIDs to filter by"
     )
     match_ids: list[str] = Field(
-        default_factory=list, description="List of match IDs to filter by"
+        default=[], description="List of match IDs to filter by"
     )
     queue: int = Field(default=-1, description="Queue ID to filter by")
     mode: str = Field(default="", description="Game mode to filter by")
@@ -34,27 +38,12 @@ class BaseMatchFilter(BaseFilter):
     timeline: bool = Field(default=False, description="Whether to fetch timeline data")
 
 
-class SummonerFilter(BaseFilter):
+class SummonerFilter(BaseModel):
+    offset: int = Field(default=0, ge=0, description="Number of items to skip")
+    limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
     puuid: str = Field(default="", description="Summoner PUUID to filter by")
     accountId: str = Field(default="", description="Account ID to filter by")
     summonerLevel: int = Field(default=-1, description="Summoner level to filter by")
-
-
-def parse_match_timeline_filter(filter_obj: BaseMatchFilter) -> Dict[str, Any]:
-    filter_dict: Dict[str, Any] = {}
-
-    if filter_obj.participant_puuids:
-        filter_dict["metadata.participants"] = {"$all": filter_obj.participant_puuids}
-    if len(filter_obj.match_ids):
-        filter_dict["metadata.matchId"] = {"$in": filter_obj.match_ids}
-    if filter_obj.queue != -1:
-        filter_dict["info.queueId"] = filter_obj.queue
-    if len(filter_obj.mode) > 0:
-        filter_dict["info.gameMode"] = filter_obj.mode
-    if len(filter_obj.match_type) > 0:
-        filter_dict["info.gameType"] = filter_obj.match_type
-
-    return filter_dict
 
 
 class DBHelper:
@@ -189,10 +178,20 @@ class DBHelper:
             )
             return []
 
-    async def get_matches(self, match_filter: BaseMatchFilter) -> list[Dict]:
+    async def get_matches(self, match_filter: BasicMatchFilter) -> list[Dict]:
         identifier = "Timeline" if match_filter.timeline else "Match"
         try:
-            db_filter = parse_match_timeline_filter(match_filter)
+            db_filter: Dict[str, Any] = {}
+            if match_filter.participant_puuids:
+                db_filter["metadata.participants"] = {"$all": match_filter.participant_puuids}
+            if len(match_filter.match_ids):
+                db_filter["metadata.matchId"] = {"$in": match_filter.match_ids}
+            if match_filter.queue != -1:
+                db_filter["info.queueId"] = match_filter.queue
+            if len(match_filter.mode) > 0:
+                db_filter["info.gameMode"] = match_filter.mode
+            if len(match_filter.match_type) > 0:
+                db_filter["info.gameType"] = match_filter.match_type
             app_logger.debug(f"Getting {identifier} data from DB [{db_filter}]")
 
             collection = (
@@ -243,20 +242,20 @@ class DBHelper:
 
     @overload
     async def generic_get(
-        self, base_filter: BaseFilter, collection: AsyncIOMotorCollection
+        self, base_filter: BasicFilter, collection: AsyncIOMotorCollection
     ) -> list[dict]: ...
 
     @overload
     async def generic_get(
         self,
-        base_filter: BaseFilter,
+        base_filter: BasicFilter,
         collection: AsyncIOMotorCollection,
         model: type[GenericModel],
     ) -> list[GenericModel]: ...
 
     async def generic_get(
         self,
-        base_filter: BaseFilter,
+        base_filter: BasicFilter,
         collection: AsyncIOMotorCollection,
         model: type[GenericModel] | None = None,
     ) -> list[GenericModel] | list[Dict]:
@@ -264,7 +263,7 @@ class DBHelper:
             app_logger.debug("Getting data from DB")
 
             cursor = (
-                collection.find({}, {"_id": 0})
+                collection.find(base_filter.filter, base_filter.project)
                 .skip(base_filter.offset)
                 .limit(base_filter.limit)
             )

@@ -1,23 +1,33 @@
 from time import perf_counter
-from typing import Annotated, Dict
+from typing import Dict
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Request
 
 from helpers.DBHelper import (
     DBHelper,
-    SummonerFilter,
-    BaseMatchFilter,
-    BaseFilter,
+    BasicFilter,
 )
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 from models.ChampionDTO import ChampionDTO
-from models.ItemDTO import ItemDTO
-from models.SummonerDTODB import SummonerDTODB
+from fastapi.middleware.cors import CORSMiddleware
 
 dbh = DBHelper()
 rh = RiotHelper()
 app = FastAPI()
+
+
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")
@@ -30,48 +40,40 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-@app.get("/matches")
-async def get_matches(match_filter: Annotated[BaseMatchFilter, Query()]):
-    db_response = await dbh.get_matches(match_filter)
-    db_matches = db_response if len(db_response) > 0 else None
-    if db_matches:
-        return db_matches
-    else:
-        raise HTTPException(
-            status_code=404, detail="No matches found that match the filter"
-        )
-
-
-@app.get("/summoners")
-async def get_summoners(
-    summoner_filter: Annotated[SummonerFilter, Query()],
-) -> list[SummonerDTODB]:
-    db_response = await dbh.get_summoners(summoner_filter)
-    if len(db_response) > 0:
-        return db_response
-    else:
-        raise HTTPException(status_code=404, detail="No summoners found")
-
-
-@app.get("/gamedata")
-async def get_app_data():
+@app.get("/static/champions/reduced")
+async def get_champions_reduced() -> list[dict]:
     champions = await dbh.generic_get(
-        BaseFilter(), dbh.champion_collection, ChampionDTO
+        BasicFilter(
+            limit=100000,
+            project={
+                "_id": 0,
+                "id": 1,
+                "key": 1,
+                "name": 1,
+                "title": 1,
+                "lore": 1,
+                "skins.name": 1,
+                "skins.lore": 1,
+                "skins.splashPath": 1,
+                "faction": 1,
+            },
+        ),
+        dbh.champion_collection,
     )
-    items = await dbh.generic_get(BaseFilter(), dbh.item_collection, ItemDTO)
-    game_modes = await dbh.generic_get(BaseFilter(), dbh.game_modes_collection)
-    game_types = await dbh.generic_get(BaseFilter(), dbh.game_types_collection)
-    maps = await dbh.generic_get(BaseFilter(), dbh.maps_collection)
-    queues = await dbh.generic_get(BaseFilter(), dbh.queues_collection)
+    return champions
 
-    return {
-        "champions": champions,
-        "items": items,
-        "game_modes": game_modes,
-        "game_types": game_types,
-        "maps": maps,
-        "queues": queues,
-    }
+
+@app.get("/static/champion/{champion_key}")
+async def get_champions(champion_key: str) -> ChampionDTO:
+    champions = await dbh.generic_get(
+        BasicFilter(limit=100000, filter={"key": champion_key}),
+        dbh.champion_collection,
+        ChampionDTO,
+    )
+    if len(champions) > 0:
+        return champions[0]
+    else:
+        raise HTTPException(status_code=404, detail="Champion not found")
 
 
 @app.get("/")

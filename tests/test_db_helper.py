@@ -1,6 +1,6 @@
 import pytest
 
-from helpers.DBHelper import DBHelper, BaseFilter, SummonerFilter, BaseMatchFilter
+from helpers.DBHelper import DBHelper, BasicFilter, SummonerFilter, BasicMatchFilter
 from models.ChampionDTO import ChampionDTO
 from models.GameModeDTO import GameModeDTO
 from models.GameTypeDTO import GameTypeDTO
@@ -35,44 +35,44 @@ async def test_queries():
 
     # match
     # no filtering
-    matches = await dbh.get_matches(BaseMatchFilter())
+    matches = await dbh.get_matches(BasicMatchFilter())
     assert len(matches) > 0
     # single match id filtering
-    matches = await dbh.get_matches(BaseMatchFilter(match_ids=[match1_id]))
+    matches = await dbh.get_matches(BasicMatchFilter(match_ids=[match1_id]))
     assert len(matches) == 1
     assert matches[0]["metadata"]["matchId"] == match1_id
     # non-existing match id filtering
     matches = await dbh.get_matches(
-        BaseMatchFilter(match_ids=["this match id does not exist"])
+        BasicMatchFilter(match_ids=["this match id does not exist"])
     )
     assert len(matches) == 0
     # multiple match id filtering
-    matches = await dbh.get_matches(BaseMatchFilter(match_ids=[match1_id, match2_id]))
+    matches = await dbh.get_matches(BasicMatchFilter(match_ids=[match1_id, match2_id]))
     assert len(matches) == 2
     assert match1_id in [match["metadata"]["matchId"] for match in matches]
     assert match2_id in [match["metadata"]["matchId"] for match in matches]
     # filtering by mode
-    matches = await dbh.get_matches(BaseMatchFilter(mode="CLASSIC"))
+    matches = await dbh.get_matches(BasicMatchFilter(mode="CLASSIC"))
     assert all(match["info"]["gameMode"] == "CLASSIC" for match in matches)
     assert all(match["info"]["gameMode"] != "ULTBOOK" for match in matches)
-    matches = await dbh.get_matches(BaseMatchFilter(mode="ULTBOOK"))
+    matches = await dbh.get_matches(BasicMatchFilter(mode="ULTBOOK"))
     assert all(match["info"]["gameMode"] == "ULTBOOK" for match in matches)
     assert all(match["info"]["gameMode"] != "CLASSIC" for match in matches)
     # filtering by participant
     matches = await dbh.get_matches(
-        BaseMatchFilter(participant_puuids=[angrybacteria_puuid])
+        BasicMatchFilter(participant_puuids=[angrybacteria_puuid])
     )
     assert len(matches) > 0
     assert all(
         angrybacteria_puuid in match["metadata"]["participants"] for match in matches
     )
     matches = await dbh.get_matches(
-        BaseMatchFilter(participant_puuids=["this puuid does not exist"])
+        BasicMatchFilter(participant_puuids=["this puuid does not exist"])
     )
     assert len(matches) == 0
     # filtering by participants
     matches = await dbh.get_matches(
-        BaseMatchFilter(
+        BasicMatchFilter(
             participant_puuids=[
                 angrybacteria_puuid,
                 bribri_puuid,
@@ -85,15 +85,15 @@ async def test_queries():
     )
     assert all(bribri_puuid in match["metadata"]["participants"] for match in matches)
     # filtering by queue id
-    matches = await dbh.get_matches(BaseMatchFilter(queue=400))
+    matches = await dbh.get_matches(BasicMatchFilter(queue=400))
     assert all(match["info"]["queueId"] == 400 for match in matches)
     assert all(match["info"]["queueId"] != 1400 for match in matches)
-    matches = await dbh.get_matches(BaseMatchFilter(queue=1400))
+    matches = await dbh.get_matches(BasicMatchFilter(queue=1400))
     assert all(match["info"]["queueId"] == 1400 for match in matches)
     assert all(match["info"]["queueId"] != 400 for match in matches)
     # filter by multiple filter options
     matches = await dbh.get_matches(
-        BaseMatchFilter(
+        BasicMatchFilter(
             mode="CLASSIC",
             queue=400,
             participant_puuids=[angrybacteria_puuid],
@@ -106,26 +106,26 @@ async def test_queries():
     )
 
     # static game data
-    static_data = await dbh.generic_get(BaseFilter(), dbh.item_collection, ItemDTO)
+    static_data = await dbh.generic_get(BasicFilter(), dbh.item_collection, ItemDTO)
     assert len(static_data) > 0
 
     static_data = await dbh.generic_get(
-        BaseFilter(), dbh.champion_collection, ChampionDTO
+        BasicFilter(), dbh.champion_collection, ChampionDTO
     )
     assert len(static_data) > 0
 
     static_data = await dbh.generic_get(
-        BaseFilter(), dbh.game_modes_collection, GameModeDTO
+        BasicFilter(), dbh.game_modes_collection, GameModeDTO
     )
     assert len(static_data) > 0
 
     static_data = await dbh.generic_get(
-        BaseFilter(), dbh.game_types_collection, GameTypeDTO
+        BasicFilter(), dbh.game_types_collection, GameTypeDTO
     )
     assert len(static_data) > 0
 
-    static_data = await dbh.generic_get(BaseFilter(), dbh.maps_collection, MapDTO)
+    static_data = await dbh.generic_get(BasicFilter(), dbh.maps_collection, MapDTO)
     assert len(static_data) > 0
 
-    static_data = await dbh.generic_get(BaseFilter(), dbh.queues_collection, QueueDTO)
+    static_data = await dbh.generic_get(BasicFilter(), dbh.queues_collection, QueueDTO)
     assert len(static_data) > 0
