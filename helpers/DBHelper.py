@@ -140,11 +140,20 @@ class DBHelper:
             )
             app_logger.debug("Created timeline indexes")
 
+            await self.champion_collection.create_index("id", unique=True)
+            await self.champion_collection.create_index("key", unique=True)
+            await self.game_modes_collection.create_index("gameMode", unique=True)
+            await self.game_types_collection.create_index("gametype", unique=True)
+            await self.item_collection.create_index("id", unique=True)
+            await self.maps_collection.create_index("mapId", unique=True)
+            await self.queues_collection.create_index("queueId", unique=True)
+            app_logger.debug("Created static data indexes")
+
             app_logger.debug("All indexes created successfully")
         except Exception as error:
             app_logger.error(f"Error creating indexes: {error}")
 
-    async def get_non_existing_ids(
+    async def get_non_existing_match_ids(
         self,
         ids: list[str],
         entity_name: Literal["MatchV5", "TimelineV5"],

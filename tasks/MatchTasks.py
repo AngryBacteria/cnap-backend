@@ -19,19 +19,19 @@ class MatchTasks:
             return
 
         for summoner in existing_summoners:
-            riot_match_ids = await self.riot_helper.get_match_list_riot(
+            riot_match_ids = await self.riot_helper.get_match_list(
                 summoner.puuid, count, offset
             )
-            filtered_match_ids = await self.db_helper.get_non_existing_ids(
+            filtered_match_ids = await self.db_helper.get_non_existing_match_ids(
                 riot_match_ids, "MatchV5", "metadata.matchId"
             )
-            filtered_timeline_ids = await self.db_helper.get_non_existing_ids(
+            filtered_timeline_ids = await self.db_helper.get_non_existing_match_ids(
                 riot_match_ids, "TimelineV5", "metadata.matchId"
             )
 
             match_data = []
             for match_id in filtered_match_ids:
-                match = await self.riot_helper.get_match_riot(match_id)
+                match = await self.riot_helper.get_match(match_id)
                 if match:
                     match_data.append(match)
             if match_data and len(match_data) > 0:
@@ -45,7 +45,7 @@ class MatchTasks:
 
             timeline_data = []
             for timeline_id in filtered_timeline_ids:
-                timeline = await self.riot_helper.get_timeline_riot(timeline_id)
+                timeline = await self.riot_helper.get_timeline(timeline_id)
                 if timeline:
                     timeline_data.append(timeline)
             if timeline_data and len(timeline_data) > 0:

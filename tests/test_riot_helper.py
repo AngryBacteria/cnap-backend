@@ -17,8 +17,8 @@ async def test_queries():
     # summoner / account
     summoner1 = await rh.get_summoner_by_account_tag("AngryBacteria", "cnap")
     summoner2 = await rh.get_summoner_by_puuid_riot(angrybacteria_puuid)
-    account1 = await rh.get_account_by_tag("AngryBacteria", "cnap")
-    account2 = await rh.get_account_by_puuid(angrybacteria_puuid)
+    account1 = await rh.get_riot_account_by_tag("AngryBacteria", "cnap")
+    account2 = await rh.get_riot_account_by_puuid(angrybacteria_puuid)
     assert summoner1.puuid == angrybacteria_puuid
     assert summoner2.puuid == angrybacteria_puuid
     assert account1.puuid == angrybacteria_puuid
@@ -30,28 +30,28 @@ async def test_queries():
     assert account2.gameName == angrybacteria_gameName
 
     # match
-    match = await rh.get_match_riot(match1_id)
+    match = await rh.get_match(match1_id)
     assert match["metadata"]["matchId"] == match1_id
-    match = await rh.get_match_riot(match2_id)
+    match = await rh.get_match(match2_id)
     assert match["metadata"]["matchId"] == match2_id
-    match = await rh.get_match_riot("does-not-exist")
+    match = await rh.get_match("does-not-exist")
     assert match is None
 
     # timeline
-    timeline = await rh.get_timeline_riot(match1_id)
+    timeline = await rh.get_timeline(match1_id)
     assert timeline["metadata"]["matchId"] == match1_id
     assert timeline is not None
-    timeline = await rh.get_timeline_riot(match2_id)
+    timeline = await rh.get_timeline(match2_id)
     assert timeline["metadata"]["matchId"] == match2_id
     assert timeline is not None
-    timeline = await rh.get_timeline_riot("does-not-exist")
+    timeline = await rh.get_timeline("does-not-exist")
     assert timeline is None
 
     # matchlist
-    matchlist = await rh.get_match_list_riot(angrybacteria_puuid)
+    matchlist = await rh.get_match_list(angrybacteria_puuid)
     assert len(matchlist) > 0
     assert matchlist is not None
-    matchlist = await rh.get_match_list_riot("does-not-exist")
+    matchlist = await rh.get_match_list("does-not-exist")
     assert len(matchlist) == 0
 
     # CDN

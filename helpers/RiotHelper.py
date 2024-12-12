@@ -87,7 +87,7 @@ class RiotHelper:
         return json_data
 
     # TODO basic pydantic model for match
-    async def get_match_riot(self, match_id: str) -> Optional[Dict[str, Any]]:
+    async def get_match(self, match_id: str) -> Optional[Dict[str, Any]]:
         """
         Fetch a match from the Riot-API. No pydantic validation as data changes quite often.
         :param match_id: The match id of the match to fetch
@@ -104,7 +104,7 @@ class RiotHelper:
             return None
 
     # TODO basic pydantic model for timeline
-    async def get_timeline_riot(self, timeline_id: str) -> Optional[Dict[str, Any]]:
+    async def get_timeline(self, timeline_id: str) -> Optional[Dict[str, Any]]:
         """
         Fetch a timeline from the Riot-API. No pydantic validation as data changes quite often.
         :param timeline_id: The id of the timeline to fetch
@@ -120,7 +120,7 @@ class RiotHelper:
             )
             return None
 
-    async def get_match_list_riot(
+    async def get_match_list(
         self, puuid: str, count: int = 95, offset: int = 0
     ) -> list[str]:
         """
@@ -142,7 +142,7 @@ class RiotHelper:
             )
             return []
 
-    async def get_account_by_tag(self, name: str, tag: str) -> Optional[AccountDTO]:
+    async def get_riot_account_by_tag(self, name: str, tag: str) -> Optional[AccountDTO]:
         """
         Fetch an account from the Riot-API by name and tag.
         :param name: Name of the account
@@ -163,7 +163,7 @@ class RiotHelper:
             )
             return None
 
-    async def get_account_by_puuid(self, puuid: str) -> Optional[AccountDTO]:
+    async def get_riot_account_by_puuid(self, puuid: str) -> Optional[AccountDTO]:
         """
         Fetch an account from the Riot-API by puuid.
         :param puuid: The puuid of the account
@@ -196,7 +196,7 @@ class RiotHelper:
             summonerDTO = await self._make_request(url, SummonerDTO)
             # check if account provided
             if not account:
-                account = await self.get_account_by_puuid(summonerDTO.puuid)
+                account = await self.get_riot_account_by_puuid(summonerDTO.puuid)
             if account:
                 dict_concat = summonerDTO.model_dump() | account.model_dump()
                 return SummonerDTODB.model_validate(dict_concat)
@@ -220,7 +220,7 @@ class RiotHelper:
         :return: SummonerDTODB object
         """
         try:
-            account = await self.get_account_by_tag(name, tag)
+            account = await self.get_riot_account_by_tag(name, tag)
             if account:
                 return await self.get_summoner_by_puuid_riot(account.puuid, account)
             else:
@@ -303,24 +303,6 @@ async def main():
     # cdn
     champions = await rh.get_champions("champions")
     print(champions[0].name)
-    items = await rh.get_cdn_resource("items")
-    print(items[0].name)
-    # account
-    account = await rh.get_account_by_tag("AngryBacteria", "cnap")
-    summoner = await rh.get_summoner_by_account_tag("AngryBacteria", "cnap")
-    summoner2 = await rh.get_summoner_by_puuid_riot(account.puuid)
-    print(account.gameName)
-    print(summoner.gameName)
-    print(summoner2.gameName)
-    # matchlist
-    matchlist = await rh.get_match_list_riot(summoner.puuid)
-    print(matchlist)
-    # match
-    match = await rh.get_match_riot(matchlist[0])
-    print(match)
-    # Mastery
-    mastery = await rh.get_champion_mastery_by_puuid_riot(summoner.puuid)
-    print(mastery[0].puuid)
 
 
 if __name__ == "__main__":
