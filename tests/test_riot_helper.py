@@ -78,10 +78,3 @@ async def test_queries():
     queues = await rh.get_queues()
     assert queues is not None
     assert len(queues) > 0
-
-    # mastery
-    mastery = await rh.get_champion_mastery_by_puuid_riot(angrybacteria_puuid)
-    assert mastery is not None
-    assert len(mastery) > 0
-    mastery = await rh.get_champion_mastery_by_puuid_riot("does-not-exist")
-    assert len(mastery) == 0

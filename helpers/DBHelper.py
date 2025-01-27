@@ -119,6 +119,22 @@ class DBHelper:
         self.mongo_client.close()
         app_logger.debug("Disconnected from MongoDB")
 
+    async def test_connection(self) -> bool:
+        """
+        Test MongoDB connection by attempting to execute a simple command.
+        Returns True if connection is successful, False otherwise.
+        """
+        try:
+            # Ping the database
+            await self.database.command("ping")
+            app_logger.info("Successfully connected to MongoDB")
+            return True
+        except Exception as error:
+            app_logger.error(
+                f"MongoDB connection test failed. Review your connection string and internet connection: {error}"
+            )
+            return False
+
     async def init_indexes(self):
         try:
             await self.summoner_collection.create_index("puuid", unique=True)
@@ -192,7 +208,9 @@ class DBHelper:
         try:
             db_filter: Dict[str, Any] = {}
             if match_filter.participant_puuids:
-                db_filter["metadata.participants"] = {"$all": match_filter.participant_puuids}
+                db_filter["metadata.participants"] = {
+                    "$all": match_filter.participant_puuids
+                }
             if len(match_filter.match_ids):
                 db_filter["metadata.matchId"] = {"$in": match_filter.match_ids}
             if match_filter.queue != -1:
@@ -201,7 +219,6 @@ class DBHelper:
                 db_filter["info.gameMode"] = match_filter.mode
             if len(match_filter.match_type) > 0:
                 db_filter["info.gameType"] = match_filter.match_type
-            app_logger.debug(f"Getting {identifier} data from DB [{db_filter}]")
 
             collection = (
                 self.timeline_collection
@@ -214,7 +231,9 @@ class DBHelper:
                 .skip(match_filter.offset)
                 .limit(match_filter.limit)
             )
-            return await cursor.to_list(length=None)
+            cursor_list = await cursor.to_list(length=None)
+            app_logger.debug(f"Got {len(cursor_list)} {identifier} objects from DB")
+            return cursor_list
         except Exception as error:
             app_logger.error(f"Error getting {identifier} with MongoDB: ", error)
             return []
@@ -232,14 +251,13 @@ class DBHelper:
             if summoner_filter.summonerLevel != -1:
                 db_filter["summonerLevel"] = summoner_filter.summonerLevel
 
-            app_logger.debug("Getting Summoner data from DB")
-
             cursor = (
                 self.summoner_collection.find(db_filter, {"_id": 0})
                 .skip(summoner_filter.offset)
                 .limit(summoner_filter.limit)
             )
             summoners_raw = await cursor.to_list(length=None)
+            app_logger.debug(f"Got {len(summoners_raw)} Summoner objects from DB")
             return [
                 SummonerDTODB.model_validate(summoner) for summoner in summoners_raw
             ]
@@ -259,26 +277,26 @@ class DBHelper:
         self,
         base_filter: BasicFilter,
         collection: AsyncIOMotorCollection,
-        model: type[GenericModel],
+        validator: type[GenericModel],
     ) -> list[GenericModel]: ...
 
     async def generic_get(
         self,
         base_filter: BasicFilter,
         collection: AsyncIOMotorCollection,
-        model: type[GenericModel] | None = None,
+        validator: type[GenericModel] | None = None,
     ) -> list[GenericModel] | list[Dict]:
         try:
-            app_logger.debug("Getting data from DB")
-
             cursor = (
                 collection.find(base_filter.filter, base_filter.project)
                 .skip(base_filter.offset)
                 .limit(base_filter.limit)
             )
             data_raw = await cursor.to_list(length=None)
-            if model:
-                return [model.model_validate(data) for data in data_raw]
+            app_logger.debug(f"Got {len(data_raw)} objects from DB")
+
+            if validator:
+                return [validator.model_validate(data) for data in data_raw]
             else:
                 return data_raw
         except Exception as error:

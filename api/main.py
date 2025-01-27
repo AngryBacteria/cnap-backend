@@ -1,3 +1,4 @@
+import sys
 from time import perf_counter
 from typing import Dict
 
@@ -16,7 +17,6 @@ dbh = DBHelper()
 rh = RiotHelper()
 app = FastAPI()
 
-
 origins = [
     "http://localhost:5173",
 ]
@@ -30,12 +30,43 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_event():
+    """
+    Verify all connections on startup.
+    Exits the application if any connection fails.
+    """
+    app_logger.info("Verifying connections...")
+
+    # Check MongoDB connection
+    if not await dbh.test_connection():
+        app_logger.error("Failed to connect to MongoDB. Exiting application.")
+        sys.exit(1)
+
+    # Check Riot API connection
+    if not await rh.test_connection():
+        app_logger.error(
+            "Failed to connect to Riot API or invalid API key. Exiting application."
+        )
+        sys.exit(1)
+
+    app_logger.info("All connections verified successfully.")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup connections"""
+    await dbh.disconnect()
+    await rh.client.aclose()
+    app_logger.info("Connections closed.")
+
+
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = perf_counter()
     response = await call_next(request)
     process_time = (perf_counter() - start_time) * 1000
-    app_logger.debug(f"{process_time:.2f}ms")
+    app_logger.debug(f"Request took {process_time:.2f}ms")
     response.headers["X-Process-Time"] = f"{process_time:.2f}"
     return response
 

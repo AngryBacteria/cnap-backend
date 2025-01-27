@@ -1,18 +1,57 @@
 version: '3.8'
 
 services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    # user: "1000:1000"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: <USERNAME_HERE>
+      MONGO_INITDB_ROOT_PASSWORD: <PASSWORD_HERE>
+    ports:
+      - "27017:27017"
+    volumes:
+      - <LOCAL_PATH_HERE>:/data/db
+    command: mongod --auth --bind_ip_all
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
   cnap-backend-api:
-    image: cnap-backend
+    image: ghcr.io/angrybacteria/cnap-backend:latest
     container_name: cnap-backend-api
+    # user: "1000:1000"
+    depends_on:
+      - mongodb
     environment:
       RUN_TYPE: api
+      MONGODB_CONNECTION_STRING: <CONNECTION_STRING_HERE>
+      RIOT_API_KEY: <RIOT-API-KEY-HERE>
     ports:
       - "8000:8000"
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   cnap-backend-task:
-    image: cnap-backend
+    image: ghcr.io/angrybacteria/cnap-backend:latest
     container_name: cnap-backend-task
+    # user: "1000:1000"
+    depends_on:
+      - mongodb
     environment:
       RUN_TYPE: task
+      MONGODB_CONNECTION_STRING: <CONNECTION_STRING_HERE>
+      RIOT_API_KEY: <RIOT-API-KEY-HERE>
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"

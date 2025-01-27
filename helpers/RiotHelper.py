@@ -51,6 +51,23 @@ class RiotHelper:
 
         return cls._instance
 
+    async def test_connection(self) -> bool:
+        """
+        Test Riot API connection by attempting to fetch the lol status endpoint.
+        Returns True if connection is successful, False otherwise.
+        """
+        try:
+            await self._make_request(
+                "https://euw1.api.riotgames.com/lol/status/v4/platform-data"
+            )
+            app_logger.info("Successfully tested Riot-API connection")
+            return True
+        except Exception as e:
+            app_logger.error(
+                f"Error while testing Riot-API connection. Check your API-Key: {e}"
+            )
+            return False
+
     GenericModel = TypeVar("GenericModel", bound=BaseModel)
 
     @overload
@@ -94,9 +111,10 @@ class RiotHelper:
         :return: Dict representation of the match
         """
         try:
-            app_logger.debug(f"Fetching Match [{match_id}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}"
-            return await self._make_request(url)
+            match = await self._make_request(url)
+            app_logger.debug(f"Match [{match_id}] fetched with Riot-API")
+            return match
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Match [{match_id}] with Riot-API: {e}"
@@ -111,9 +129,10 @@ class RiotHelper:
         :return: Dict representation of the timeline
         """
         try:
-            app_logger.debug(f"Fetching Timeline [{timeline_id}] with Riot-API")
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{timeline_id}/timeline"
-            return await self._make_request(url)
+            timeline = await self._make_request(url)
+            app_logger.debug(f"Timeline [{timeline_id}] fetched with Riot-API")
+            return timeline
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Timeline [{timeline_id}] with Riot-API: {e}"
@@ -131,18 +150,21 @@ class RiotHelper:
         :return: A list of match_ids (strings) for the given summoner
         """
         try:
-            app_logger.debug(
-                f"Fetching Matchlist [count={count}, offset={offset}] [{puuid}] with Riot-API"
-            )
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start={offset}&count={count}"
-            return await self._make_request(url)
+            match_list = await self._make_request(url)
+            app_logger.debug(
+                f"Fetched Matchlist [count={count}, offset={offset}] [{puuid}] with Riot-API"
+            )
+            return match_list
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Matchlist [count={count}, offset={offset}] of Summoner [{puuid}] with Riot-API: {e}"
             )
             return []
 
-    async def get_riot_account_by_tag(self, name: str, tag: str) -> Optional[AccountDTO]:
+    async def get_riot_account_by_tag(
+        self, name: str, tag: str
+    ) -> Optional[AccountDTO]:
         """
         Fetch an account from the Riot-API by name and tag.
         :param name: Name of the account
@@ -151,11 +173,12 @@ class RiotHelper:
         """
         try:
             tag = tag.replace("#", "")
-            app_logger.debug(
-                f"Fetching Account [{name} - {tag}] by name-tag with Riot-API"
-            )
             url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}"
-            return await self._make_request(url, AccountDTO)
+            account = await self._make_request(url, AccountDTO)
+            app_logger.debug(
+                f"Fetched Account [{name} - {tag}] by name-tag with Riot-API"
+            )
+            return account
 
         except Exception as e:
             app_logger.error(
@@ -170,9 +193,10 @@ class RiotHelper:
         :return: AccountDTO object
         """
         try:
-            app_logger.debug(f"Fetching Account [{puuid}] by puuid with Riot-API")
             url = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
-            return await self._make_request(url, AccountDTO)
+            account = await self._make_request(url, AccountDTO)
+            app_logger.debug(f"Fetched Account [{puuid}] by puuid with Riot-API")
+            return account
 
         except Exception as e:
             app_logger.error(
@@ -191,9 +215,9 @@ class RiotHelper:
         :return: SummonerDTODB object with the merged data
         """
         try:
-            app_logger.debug(f"Fetching Summoner [{puuid}] by puuid with Riot-API")
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
             summonerDTO = await self._make_request(url, SummonerDTO)
+            app_logger.debug(f"Fetched Summoner [{puuid}] by puuid with Riot-API")
             # check if account provided
             if not account:
                 account = await self.get_riot_account_by_puuid(summonerDTO.puuid)
@@ -239,6 +263,10 @@ class RiotHelper:
         for key, value in raw_data.items():
             item = ItemDTO.model_validate(value)
             items.append(item)
+
+        app_logger.debug(
+            f"Fetched {len(items)} Items with Meraki-CDN [{patch}] [{locale}]"
+        )
         return items
 
     async def get_champions(
@@ -251,59 +279,48 @@ class RiotHelper:
         for key, value in raw_data.items():
             item = ChampionDTO.model_validate(value)
             champions.append(item)
+        app_logger.debug(
+            f"Fetched {len(champions)} Champions with Meraki-CDN [{patch}] [{locale}]"
+        )
         return champions
 
     async def get_game_modes(self) -> Sequence[GameModeDTO]:
         raw_data = await self._make_request(
             "https://static.developer.riotgames.com/docs/lol/gameModes.json"
         )
+        game_modes = [GameModeDTO.model_validate(data) for data in raw_data]
+        app_logger.debug(f"Fetched {len(game_modes)} Game Modes with Riot-CDN")
         return [GameModeDTO.model_validate(data) for data in raw_data]
 
     async def get_game_types(self) -> Sequence[GameTypeDTO]:
         raw_data = await self._make_request(
             "https://static.developer.riotgames.com/docs/lol/gameTypes.json"
         )
+        game_types = [GameTypeDTO.model_validate(data) for data in raw_data]
+        app_logger.debug(f"Fetched {len(game_types)} Game Types with Riot-CDN")
         return [GameTypeDTO.model_validate(data) for data in raw_data]
 
     async def get_maps(self) -> Sequence[MapDTO]:
         raw_data = await self._make_request(
             "https://static.developer.riotgames.com/docs/lol/maps.json"
         )
+        maps = [MapDTO.model_validate(data) for data in raw_data]
+        app_logger.debug(f"Fetched {len(maps)} Maps with Riot-CDN")
         return [MapDTO.model_validate(data) for data in raw_data]
 
     async def get_queues(self) -> Sequence[QueueDTO]:
         raw_data = await self._make_request(
             "https://static.developer.riotgames.com/docs/lol/queues.json"
         )
+        queues = [QueueDTO.model_validate(data) for data in raw_data]
+        app_logger.debug(f"Fetched {len(queues)} Queues with Riot-CDN")
         return [QueueDTO.model_validate(data) for data in raw_data]
-
-    async def get_champion_mastery_by_puuid_riot(
-        self, puuid: str
-    ) -> Sequence[ChampionMasteryDTO]:
-        """
-        Fetch the Champion Mastery for all champions of a summoner by puuid.
-        :param puuid: The puuid of the summoner
-        :return: List of Champion Mastery objects
-        """
-        try:
-            app_logger.debug(
-                f"Fetching Champion Mastery for Summoner [{puuid}] with Riot-API"
-            )
-            url = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}"
-            return await self._make_request(url, ChampionMasteryDTO, True)
-        except Exception as e:
-            app_logger.error(
-                f"Error while fetching Champion Mastery for Summoner [{puuid}] with Riot-API: {e}"
-            )
-            return []
 
 
 async def main():
     rh = RiotHelper()
-    # cdn
-    champions = await rh.get_champions("champions")
-    print(champions[0].name)
-
+    match = await rh.get_match("EUW1_7084514418")
+    print(match)
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,3 +1,5 @@
+import asyncio
+
 from helpers.DBHelper import DBHelper, SummonerFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
@@ -57,7 +59,18 @@ class MatchTasks:
                     None,
                 )
 
-    async def fill_match_data(self):
+    async def fill_match_data(self, puuid=""):
         for i in range(0, 2000, 95):
             app_logger.debug(f"INSERTING WITH I = {i}")
-            await self.update_match_data(95, i)
+            await self.update_match_data(95, i, puuid)
+
+
+async def main():
+    match_tasks = MatchTasks()
+    await match_tasks.fill_match_data(
+        puuid="sUl1DJpnjR6C4eSv5O_r2tgnEfs_5o-5GSTG3Xs6v8mYFIIg-uC1CAZDYOP02xh6Yx9g5EE92KuuVA"
+    )
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

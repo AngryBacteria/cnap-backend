@@ -1,0 +1,12 @@
+.env
+
+.idea/
+
+.gitignore
+.github/
+.git/
+
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+mypy_cache/
