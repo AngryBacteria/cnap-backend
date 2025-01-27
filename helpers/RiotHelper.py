@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from helpers.Logger import app_logger
-from models.ChampionMasteryDTO import ChampionMasteryDTO
 from models.AccountDTO import AccountDTO
 from models.ChampionDTO import ChampionDTO
 from models.GameModeDTO import GameModeDTO

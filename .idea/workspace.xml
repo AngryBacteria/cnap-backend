@@ -5,17 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="hotfix task (no filter was supplied)">
-      <change afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/DBHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DBHelper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/Logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Logger.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/RiotHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/RiotHelper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/MatchTasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/MatchTasks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/SummonerTasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/SummonerTasks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_riot_helper.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_riot_helper.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/ChampionMasteryDTO.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -300,7 +293,7 @@
       <workItem from="1737984432314" duration="260000" />
       <workItem from="1737985577957" duration="47000" />
       <workItem from="1737985991532" duration="805000" />
-      <workItem from="1738000374071" duration="962000" />
+      <workItem from="1738000374071" duration="4272000" />
     </task>
     <task id="LOCAL-00001" summary="added timeline">
       <option name="closed" value="true" />
