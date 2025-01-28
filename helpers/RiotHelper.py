@@ -9,6 +9,7 @@ from asynciolimiter import Limiter
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
+from helpers.DBHelper import get_nested_value
 from helpers.Logger import app_logger
 from models.AccountDTO import AccountDTO
 from models.ChampionDTO import ChampionDTO
@@ -319,7 +320,10 @@ class RiotHelper:
 async def main():
     rh = RiotHelper()
     match = await rh.get_match("EUW1_7084514418")
-    print(match)
+    print(get_nested_value(match, "info.gameMode"))
+
+    summoner = await rh.get_summoner_by_account_tag("AngryBacteria", "CnAP")
+    print(get_nested_value(summoner, "puuid"))
 
 if __name__ == "__main__":
     asyncio.run(main())

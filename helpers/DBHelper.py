@@ -46,6 +46,29 @@ class SummonerFilter(BaseModel):
     summonerLevel: int = Field(default=-1, description="Summoner level to filter by")
 
 
+def get_nested_value(item: Union[dict, BaseModel], nested_key: str) -> Any:
+    """Helper function to get value from nested dictionary or Pydantic model using dot notation"""
+    keys = nested_key.split(".")
+    current: Union[Dict, BaseModel, Any] = item
+
+    for key in keys:
+        if isinstance(current, BaseModel):
+            # Handle Pydantic models using getattr
+            if not hasattr(current, key):
+                raise ValueError(f"Invalid key {nested_key} for Pydantic model {item}")
+            current = getattr(current, key)
+        elif isinstance(current, dict):
+            # Handle dictionaries using get
+            current = current.get(key)
+        else:
+            raise ValueError(f"Invalid key {nested_key} for item {item}")
+
+    if current is None:
+        raise ValueError(f"Invalid key {nested_key} for item {item}")
+
+    return current
+
+
 class DBHelper:
     _instance: Any = None
     _lock: Lock = Lock()
@@ -166,6 +189,8 @@ class DBHelper:
             app_logger.debug("Created static data indexes")
 
             app_logger.debug("All indexes created successfully")
+
+            return True
         except Exception as error:
             app_logger.error(f"Error creating indexes: {error}")
 
@@ -303,6 +328,7 @@ class DBHelper:
             app_logger.error("Error getting data with MongoDB: ", error)
             return []
 
+    # TODO fix double validation
     async def generic_upsert(
         self,
         data: Union[Sequence[dict], Sequence[BaseModel]],
@@ -312,20 +338,6 @@ class DBHelper:
         validator: Type[BaseModel] | None = None,
     ) -> bool:
         try:
-
-            def get_nested_value(item: dict, nested_key: str) -> Any:
-                """Helper function to get value from nested dictionary using dot notation"""
-                keys = nested_key.split(".")
-                current: Union[Dict, Any] = item
-                for key in keys:
-                    if isinstance(current, dict):
-                        current = current.get(key)
-                    else:
-                        raise ValueError(f"Invalid key {nested_key} for item {item}")
-                if current is None:
-                    raise ValueError(f"Invalid key {nested_key} for item {item}")
-                return current
-
             if len(data) == 0:
                 app_logger.debug(f"No {data_name} data to upsert")
                 return False
