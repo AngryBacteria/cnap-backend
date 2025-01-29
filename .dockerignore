@@ -1,12 +1,43 @@
-.env
-
-.idea/
-
-.gitignore
-.github/
-.git/
-
+# Python
 __pycache__/
-.ruff_cache/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class
 .pytest_cache/
-mypy_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+*.egg
+venv/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# Git
+.git/
+.github/
+.gitignore
+
+# Docker
+docker-compose*.yml
+
+# Development/Local
+*.log
+*.sqlite
+*.sqlite3
+*.db
+.DS_Store
+tmp/
+temp/
