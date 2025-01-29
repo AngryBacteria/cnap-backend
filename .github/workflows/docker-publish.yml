@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: AngryBacteria/cnap-backend
+  IMAGE_NAME: angrybacteria/cnap-backend
 
 jobs:
   build-and-push:
