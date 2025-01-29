@@ -115,17 +115,17 @@ async def test_queries():
     assert len(static_data) > 0
 
     static_data = await dbh.generic_get(
-        BasicFilter(), dbh.game_modes_collection, GameModeDTO
+        BasicFilter(), dbh.game_mode_collection, GameModeDTO
     )
     assert len(static_data) > 0
 
     static_data = await dbh.generic_get(
-        BasicFilter(), dbh.game_types_collection, GameTypeDTO
+        BasicFilter(), dbh.game_type_collection, GameTypeDTO
     )
     assert len(static_data) > 0
 
-    static_data = await dbh.generic_get(BasicFilter(), dbh.maps_collection, MapDTO)
+    static_data = await dbh.generic_get(BasicFilter(), dbh.map_collection, MapDTO)
     assert len(static_data) > 0
 
-    static_data = await dbh.generic_get(BasicFilter(), dbh.queues_collection, QueueDTO)
+    static_data = await dbh.generic_get(BasicFilter(), dbh.queue_collection, QueueDTO)
     assert len(static_data) > 0

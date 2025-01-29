@@ -1,5 +1,5 @@
-from pydantic import ConfigDict
+from pydantic import ConfigDict, BaseModel
 
-GLOBAL_PYDANTIC_CONFIG = ConfigDict(
-    extra="allow", str_strip_whitespace=True, strict=False
-)
+
+class BaseConfig(BaseModel):
+    model_config = ConfigDict(extra="allow", str_strip_whitespace=True, strict=False)

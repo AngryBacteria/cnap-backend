@@ -1,8 +1,9 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
+from models.GlobalPydanticConfig import BaseConfig
 
 
-class MapDTO(BaseModel):
+class MapDTO(BaseConfig):
     mapId: int
     mapName: str
     notes: str

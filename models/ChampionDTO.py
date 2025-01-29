@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from models.GlobalPydanticConfig import GLOBAL_PYDANTIC_CONFIG
+from models.GlobalPydanticConfig import BaseConfig
 
 
-class ChampionDTO(BaseModel):
-    model_config = GLOBAL_PYDANTIC_CONFIG
+class ChampionDTO(BaseConfig):
     id: int = Field(
         description="Unique identifier for the champion in the game system",
         examples=[1],

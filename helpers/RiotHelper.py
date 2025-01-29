@@ -325,5 +325,6 @@ async def main():
     summoner = await rh.get_summoner_by_account_tag("AngryBacteria", "CnAP")
     print(get_nested_value(summoner, "puuid"))
 
+
 if __name__ == "__main__":
     asyncio.run(main())

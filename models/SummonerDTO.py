@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from models.GlobalPydanticConfig import GLOBAL_PYDANTIC_CONFIG
+from models.GlobalPydanticConfig import BaseConfig
 
 
-class SummonerDTO(BaseModel):
-    model_config = GLOBAL_PYDANTIC_CONFIG
+class SummonerDTO(BaseConfig):
     id: str = Field(
         description="Encrypted summoner ID. Used for looking up League-specific information.",
         examples=["OWjT1dt-lDb7Be0bSqcDJz3h9wdJEfkgf1OQjlKWKYmn138"],

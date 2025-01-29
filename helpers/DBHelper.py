@@ -69,22 +69,22 @@ def get_nested_value(item: Union[dict, BaseModel], nested_key: str) -> Any:
     return current
 
 
+# Make this shit more type safe
 class DBHelper:
     _instance: Any = None
     _lock: Lock = Lock()
     mongo_client: AsyncIOMotorClient[Mapping[str, Any]]
     database: AsyncIOMotorDatabase[Mapping[str, Any]]
-    # changing
+    # collections
+    champion_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    game_mode_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    game_type_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    item_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    map_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     match_collection: AsyncIOMotorCollection[Mapping[str, Any]]
+    queue_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     summoner_collection: AsyncIOMotorCollection[Mapping[str, Any]]
     timeline_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    # static
-    champion_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    item_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    maps_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    game_modes_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    game_types_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    queues_collection: AsyncIOMotorCollection[Mapping[str, Any]]
 
     def __new__(cls) -> Any:
         if cls._instance is None:
@@ -102,34 +102,33 @@ class DBHelper:
                         cls._instance.database = (
                             cls._instance.mongo_client.get_database("cnap")
                         )
-                        # changing
-                        cls._instance.match_collection = (
-                            cls._instance.database.get_collection("match_v5")
-                        )
-                        cls._instance.timeline_collection = (
-                            cls._instance.database.get_collection("timeline_v5")
-                        )
-                        # static
-                        cls._instance.summoner_collection = (
-                            cls._instance.database.get_collection("summoner")
-                        )
+                        # collections
                         cls._instance.champion_collection = (
                             cls._instance.database.get_collection("champion")
+                        )
+                        cls._instance.game_mode_collection = (
+                            cls._instance.database.get_collection("game_mode")
+                        )
+                        cls._instance.game_type_collection = (
+                            cls._instance.database.get_collection("game_type")
                         )
                         cls._instance.item_collection = (
                             cls._instance.database.get_collection("item")
                         )
-                        cls._instance.game_modes_collection = (
-                            cls._instance.database.get_collection("game_modes")
+                        cls._instance.map_collection = (
+                            cls._instance.database.get_collection("map")
                         )
-                        cls._instance.game_types_collection = (
-                            cls._instance.database.get_collection("game_types")
+                        cls._instance.match_collection = (
+                            cls._instance.database.get_collection("match_v5")
                         )
-                        cls._instance.maps_collection = (
-                            cls._instance.database.get_collection("maps")
+                        cls._instance.queue_collection = (
+                            cls._instance.database.get_collection("queue")
                         )
-                        cls._instance.queues_collection = (
-                            cls._instance.database.get_collection("queues")
+                        cls._instance.summoner_collection = (
+                            cls._instance.database.get_collection("summoner")
+                        )
+                        cls._instance.timeline_collection = (
+                            cls._instance.database.get_collection("timeline_v5")
                         )
 
                     else:
@@ -181,11 +180,11 @@ class DBHelper:
 
             await self.champion_collection.create_index("id", unique=True)
             await self.champion_collection.create_index("key", unique=True)
-            await self.game_modes_collection.create_index("gameMode", unique=True)
-            await self.game_types_collection.create_index("gametype", unique=True)
+            await self.game_mode_collection.create_index("gameMode", unique=True)
+            await self.game_type_collection.create_index("gametype", unique=True)
             await self.item_collection.create_index("id", unique=True)
-            await self.maps_collection.create_index("mapId", unique=True)
-            await self.queues_collection.create_index("queueId", unique=True)
+            await self.map_collection.create_index("mapId", unique=True)
+            await self.queue_collection.create_index("queueId", unique=True)
             app_logger.debug("Created static data indexes")
 
             app_logger.debug("All indexes created successfully")

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from models.GlobalPydanticConfig import GLOBAL_PYDANTIC_CONFIG
+from models.GlobalPydanticConfig import BaseConfig
 
 
-class AccountDTO(BaseModel):
-    model_config = GLOBAL_PYDANTIC_CONFIG
+class AccountDTO(BaseConfig):
     puuid: str = Field(
         description="Player Universally Unique Identifier. A unique identifier for the player across all Riot games.",
         examples=[

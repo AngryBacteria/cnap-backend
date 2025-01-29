@@ -51,7 +51,7 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 game_modes,
                 "gameMode",
-                self.db_helper.game_modes_collection,
+                self.db_helper.game_mode_collection,
                 data_name="game mode",
             )
             app_logger.debug("Game modes updated")
@@ -65,7 +65,7 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 game_types,
                 "gametype",
-                self.db_helper.game_types_collection,
+                self.db_helper.game_type_collection,
                 data_name="game type",
             )
             app_logger.debug("Game types updated")
@@ -79,7 +79,7 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 maps,
                 "mapId",
-                self.db_helper.maps_collection,
+                self.db_helper.map_collection,
                 data_name="map",
             )
             app_logger.debug("Maps updated")
@@ -93,7 +93,7 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 queues,
                 "queueId",
-                self.db_helper.queues_collection,
+                self.db_helper.queue_collection,
                 data_name="queue",
             )
             app_logger.debug("Queues updated")

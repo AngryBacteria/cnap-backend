@@ -1,7 +1,8 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
+from models.GlobalPydanticConfig import BaseConfig
 
 
-class GameModeDTO(BaseModel):
+class GameModeDTO(BaseConfig):
     gameMode: str
     description: str

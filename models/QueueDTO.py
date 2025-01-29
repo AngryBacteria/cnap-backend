@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel
+from models.GlobalPydanticConfig import BaseConfig
 
 
-class QueueDTO(BaseModel):
+class QueueDTO(BaseConfig):
     queueId: int
     map: str
     description: Optional[str]
