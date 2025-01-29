@@ -9,7 +9,6 @@ from asynciolimiter import Limiter
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from helpers.DBHelper import get_nested_value
 from helpers.Logger import app_logger
 from models.AccountDTO import AccountDTO
 from models.ChampionDTO import ChampionDTO
@@ -20,6 +19,21 @@ from models.MapDTO import MapDTO
 from models.QueueDTO import QueueDTO
 from models.SummonerDTO import SummonerDTO
 from models.SummonerDTODB import SummonerDTODB
+
+
+def map_asset_path(input_path: str | None, plugin: str = "rcp-be-lol-game-data") -> str:
+    """
+    Maps an asset path to the correct URL for the Community Dragon CDN.
+    """
+    prefix = "/lol-game-data/assets/"
+    if input_path is None:
+        return ""
+    if not input_path.startswith(prefix):
+        return input_path
+    asset_path = input_path[len(prefix) :]
+    mapped_path = f"https://raw.communitydragon.org/latest/plugins/{plugin}/global/default/{asset_path}".lower()
+
+    return mapped_path
 
 
 class RiotHelper:
@@ -71,25 +85,24 @@ class RiotHelper:
     GenericModel = TypeVar("GenericModel", bound=BaseModel)
 
     @overload
+    async def _make_request(self, url: str) -> Any: ...
+
+    @overload
+    async def _make_request(self, url: str, *, use_limiter: bool) -> Any: ...
+
+    @overload
     async def _make_request(
         self, url: str, model: type[GenericModel]
     ) -> GenericModel: ...
-
-    @overload
-    async def _make_request(
-        self, url: str, model: type[GenericModel], model_list: bool
-    ) -> list[GenericModel]: ...
-
-    @overload
-    async def _make_request(self, url: str) -> Any: ...
 
     async def _make_request(
         self,
         url: str,
         model: type[GenericModel] | None = None,
-        model_list: bool = False,
+        use_limiter: bool = True,
     ) -> GenericModel | list[GenericModel] | Any:
-        await self.limiter.wait()
+        if use_limiter:
+            await self.limiter.wait()
         response = await self.client.get(url)
         response.raise_for_status()
         json_data = response.json()
@@ -97,10 +110,7 @@ class RiotHelper:
             raise ValueError("No data returned")
 
         if model is not None:
-            if isinstance(json_data, list) and model_list:
-                return [model.model_validate(data) for data in json_data]
-            else:
-                return model.model_validate(json_data)
+            return model.model_validate(json_data)
         return json_data
 
     # TODO basic pydantic model for match
@@ -255,75 +265,139 @@ class RiotHelper:
             )
             return None
 
-    async def get_items(self, patch="latest", locale="en-US") -> Sequence[ItemDTO]:
+    async def get_items(self) -> Sequence[ItemDTO]:
         raw_data = await self._make_request(
-            f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/items.json"
+            "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json",
+            use_limiter=False,
         )
-        items = []
-        for key, value in raw_data.items():
-            item = ItemDTO.model_validate(value)
-            items.append(item)
+        output = []
+        for item_raw in raw_data:
+            item = ItemDTO.model_validate(item_raw)
+            item.iconPath = map_asset_path(item.iconPath)
+            output.append(item)
 
-        app_logger.debug(
-            f"Fetched {len(items)} Items with Meraki-CDN [{patch}] [{locale}]"
-        )
-        return items
+        app_logger.debug(f"Fetched {len(output)} Items with Riot-CDN")
+        return output
 
     async def get_champions(
-        self, patch="latest", locale="en-US"
+        self,
     ) -> Sequence[ChampionDTO]:
-        raw_data = await self._make_request(
-            f"https://cdn.merakianalytics.com/riot/lol/resources/{patch}/{locale}/champions.json"
-        )
-        champions = []
-        for key, value in raw_data.items():
-            item = ChampionDTO.model_validate(value)
-            champions.append(item)
-        app_logger.debug(
-            f"Fetched {len(champions)} Champions with Meraki-CDN [{patch}] [{locale}]"
-        )
-        return champions
+        try:
+            output_data = []
+            champions_summary = await self._make_request(
+                "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-summary.json",
+                use_limiter=False,
+            )
+            for champion_summary in champions_summary:
+                champion_data_raw = await self._make_request(
+                    f"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/{champion_summary['id']}.json",
+                    use_limiter=False,
+                )
+                if len(champion_data_raw["skins"]) > 0:
+                    champion_data_raw["uncenteredSplashPath"] = champion_data_raw[
+                        "skins"
+                    ][0]["uncenteredSplashPath"]
+                else:
+                    champion_data_raw["uncenteredSplashPath"] = ""
+
+                champion = ChampionDTO.model_validate(champion_data_raw)
+                champion.squarePortraitPath = map_asset_path(
+                    champion.squarePortraitPath
+                )
+                champion.stingerSfxPath = map_asset_path(champion.stingerSfxPath)
+                champion.chooseVoPath = map_asset_path(champion.chooseVoPath)
+                champion.banVoPath = map_asset_path(champion.banVoPath)
+                champion.uncenteredSplashPath = map_asset_path(
+                    champion.uncenteredSplashPath
+                )
+
+                for skin in champion.skins:
+                    skin.splashPath = map_asset_path(skin.splashPath)
+                    skin.uncenteredSplashPath = map_asset_path(
+                        skin.uncenteredSplashPath
+                    )
+                    skin.tilePath = map_asset_path(skin.tilePath)
+                    skin.loadScreenPath = map_asset_path(skin.loadScreenPath)
+
+                champion.passive.abilityIconPath = map_asset_path(
+                    champion.passive.abilityIconPath
+                )
+                champion.passive.abilityVideoPath = map_asset_path(
+                    champion.passive.abilityVideoPath
+                )
+                champion.passive.abilityVideoImagePath = map_asset_path(
+                    champion.passive.abilityVideoImagePath
+                )
+
+                for spell in champion.spells:
+                    spell.abilityIconPath = map_asset_path(spell.abilityIconPath)
+                    spell.abilityVideoPath = map_asset_path(spell.abilityVideoPath)
+                    spell.abilityVideoImagePath = map_asset_path(
+                        spell.abilityVideoImagePath
+                    )
+
+                output_data.append(champion)
+
+            app_logger.debug(f"Fetched {len(output_data)} Champions with Riot-CDN")
+            return output_data
+
+        except Exception as e:
+            app_logger.error(f"Error while fetching Champions with Riot-CDN: {e}")
+            return []
 
     async def get_game_modes(self) -> Sequence[GameModeDTO]:
-        raw_data = await self._make_request(
-            "https://static.developer.riotgames.com/docs/lol/gameModes.json"
-        )
-        game_modes = [GameModeDTO.model_validate(data) for data in raw_data]
-        app_logger.debug(f"Fetched {len(game_modes)} Game Modes with Riot-CDN")
-        return [GameModeDTO.model_validate(data) for data in raw_data]
+        try:
+            raw_data = await self._make_request(
+                "https://static.developer.riotgames.com/docs/lol/gameModes.json"
+            )
+            game_modes = [GameModeDTO.model_validate(data) for data in raw_data]
+            app_logger.debug(f"Fetched {len(game_modes)} Game Modes with Riot-CDN")
+            return [GameModeDTO.model_validate(data) for data in raw_data]
+        except Exception as e:
+            app_logger.error(f"Error while fetching Game Modes with Riot-CDN: {e}")
+            return []
 
     async def get_game_types(self) -> Sequence[GameTypeDTO]:
-        raw_data = await self._make_request(
-            "https://static.developer.riotgames.com/docs/lol/gameTypes.json"
-        )
-        game_types = [GameTypeDTO.model_validate(data) for data in raw_data]
-        app_logger.debug(f"Fetched {len(game_types)} Game Types with Riot-CDN")
-        return [GameTypeDTO.model_validate(data) for data in raw_data]
+        try:
+            raw_data = await self._make_request(
+                "https://static.developer.riotgames.com/docs/lol/gameTypes.json"
+            )
+            game_types = [GameTypeDTO.model_validate(data) for data in raw_data]
+            app_logger.debug(f"Fetched {len(game_types)} Game Types with Riot-CDN")
+            return [GameTypeDTO.model_validate(data) for data in raw_data]
+        except Exception as e:
+            app_logger.error(f"Error while fetching Game Types with Riot-CDN: {e}")
+            return []
 
     async def get_maps(self) -> Sequence[MapDTO]:
-        raw_data = await self._make_request(
-            "https://static.developer.riotgames.com/docs/lol/maps.json"
-        )
-        maps = [MapDTO.model_validate(data) for data in raw_data]
-        app_logger.debug(f"Fetched {len(maps)} Maps with Riot-CDN")
-        return [MapDTO.model_validate(data) for data in raw_data]
+        try:
+            raw_data = await self._make_request(
+                "https://static.developer.riotgames.com/docs/lol/maps.json"
+            )
+            maps = [MapDTO.model_validate(data) for data in raw_data]
+            app_logger.debug(f"Fetched {len(maps)} Maps with Riot-CDN")
+            return [MapDTO.model_validate(data) for data in raw_data]
+        except Exception as e:
+            app_logger.error(f"Error while fetching Maps with Riot-CDN: {e}")
+            return []
 
     async def get_queues(self) -> Sequence[QueueDTO]:
-        raw_data = await self._make_request(
-            "https://static.developer.riotgames.com/docs/lol/queues.json"
-        )
-        queues = [QueueDTO.model_validate(data) for data in raw_data]
-        app_logger.debug(f"Fetched {len(queues)} Queues with Riot-CDN")
-        return [QueueDTO.model_validate(data) for data in raw_data]
+        try:
+            raw_data = await self._make_request(
+                "https://static.developer.riotgames.com/docs/lol/queues.json"
+            )
+            queues = [QueueDTO.model_validate(data) for data in raw_data]
+            app_logger.debug(f"Fetched {len(queues)} Queues with Riot-CDN")
+            return [QueueDTO.model_validate(data) for data in raw_data]
+        except Exception as e:
+            app_logger.error(f"Error while fetching Queues with Riot-CDN: {e}")
+            return []
 
 
 async def main():
     rh = RiotHelper()
-    match = await rh.get_match("EUW1_7084514418")
-    print(get_nested_value(match, "info.gameMode"))
-
-    summoner = await rh.get_summoner_by_account_tag("AngryBacteria", "CnAP")
-    print(get_nested_value(summoner, "puuid"))
+    await rh.get_items()
+    await rh.get_champions()
 
 
 if __name__ == "__main__":

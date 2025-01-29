@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from pymongo import UpdateOne
 
 from helpers.Logger import app_logger
+from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
 
 
@@ -370,8 +371,9 @@ class DBHelper:
 
 async def main():
     dbh = DBHelper()
-    await dbh.init_indexes()
-    await dbh.disconnect()
+    await dbh.generic_get(
+        BasicFilter(limit=100000), dbh.item_collection, validator=ItemDTO
+    )
 
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from helpers.DBHelper import DBHelper, SummonerFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
-from models.SummonerDTODB import SummonerDTODB
 
 
 class SummonerTasks:
@@ -41,7 +40,7 @@ class SummonerTasks:
             "puuid",
             self.db_helper.summoner_collection,
             data_name="Summoner",
-            validator=SummonerDTODB,
+            validator=None,
         )
 
     # Add a single summoner to the summoners collection
@@ -59,7 +58,7 @@ class SummonerTasks:
                 "puuid",
                 self.db_helper.summoner_collection,
                 data_name="Summoner",
-                validator=SummonerDTODB,
+                validator=None,
             )
         else:
             raise ValueError("Summoner not found")
@@ -83,7 +82,7 @@ class SummonerTasks:
                 "puuid",
                 self.db_helper.summoner_collection,
                 "Summoner",
-                SummonerDTODB,
+                None,
             )
 
 

@@ -3,8 +3,6 @@ import asyncio
 from helpers.DBHelper import DBHelper
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
-from models.ChampionDTO import ChampionDTO
-from models.ItemDTO import ItemDTO
 
 
 class GameDataTask:
@@ -23,7 +21,7 @@ class GameDataTask:
                 "id",
                 self.db_helper.item_collection,
                 data_name="Item",
-                validator=ItemDTO,
+                validator=None,
             )
             app_logger.debug("Items updated")
 
@@ -38,7 +36,7 @@ class GameDataTask:
                 "id",
                 self.db_helper.champion_collection,
                 data_name="champion",
-                validator=ChampionDTO,
+                validator=None,
             )
             app_logger.debug("Champions updated")
 

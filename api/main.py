@@ -87,14 +87,11 @@ async def get_champions_reduced() -> list[dict]:
             project={
                 "_id": 0,
                 "id": 1,
-                "key": 1,
                 "name": 1,
+                "alias": 1,
                 "title": 1,
-                "lore": 1,
-                "skins.name": 1,
-                "skins.lore": 1,
-                "skins.splashPath": 1,
-                "faction": 1,
+                "shortBio": 1,
+                "uncenteredSplashPath": 1,
             },
         ),
         dbh.champion_collection,
@@ -102,10 +99,10 @@ async def get_champions_reduced() -> list[dict]:
     return champions
 
 
-@app.get("/static/champions/{champion_key}")
-async def get_champions(champion_key: str) -> ChampionDTO:
+@app.get("/static/champions/{champion_id}")
+async def get_champions(champion_id: int) -> ChampionDTO:
     champions = await dbh.generic_get(
-        BasicFilter(limit=100000, filter={"key": champion_key}),
+        BasicFilter(limit=100000, filter={"id": champion_id}),
         dbh.champion_collection,
         ChampionDTO,
     )
@@ -140,12 +137,13 @@ async def get_static_data() -> StaticDataResponse:
                     "_id": 0,
                     "name": 1,
                     "id": 1,
-                    "icon": 1,
-                    "simpleDescription": 1,
+                    "iconPath": 1,
+                    "description": 1,
+                    "categories": 1,
                 },
             ),
             dbh.item_collection,
-            ItemDTO
+            ItemDTO,
         ),
         dbh.generic_get(BasicFilter(limit=100000), dbh.map_collection, MapDTO),
         dbh.generic_get(BasicFilter(limit=100000), dbh.queue_collection, QueueDTO),
