@@ -2,7 +2,7 @@ import asyncio
 import os
 from collections.abc import Sequence
 from threading import Lock
-from typing import Optional, Dict, TypeVar, Any, overload
+from typing import Optional, Dict, TypeVar, Any, overload, cast
 
 import httpx
 from asynciolimiter import Limiter
@@ -37,24 +37,35 @@ def map_asset_path(input_path: str | None, plugin: str = "rcp-be-lol-game-data")
 
 
 class RiotHelper:
-    _instance = None
+    _instance: Optional["RiotHelper"] = None
     _lock: Lock = Lock()
+    _initialized: bool = False
+
     riot_api_key: str
     client: httpx.AsyncClient
     limiter: Limiter
     cdragon_url: str = "https://raw.communitydragon.org"
 
-    def __new__(cls):
-        if cls._instance is None:
+    def __init__(self) -> None:
+        raise RuntimeError("Call get_instance() instead")
+
+    def __new__(cls) -> "RiotHelper":
+        raise RuntimeError("Call get_instance() instead")
+
+    @classmethod
+    def get_instance(cls) -> "RiotHelper":
+        if not cls._instance:
             with cls._lock:
-                if cls._instance is None:
+                if not cls._instance:
                     cls._instance = super().__new__(cls)
                     load_dotenv()
 
                     # Initialize Riot API Key
-                    cls._instance.riot_api_key = os.getenv("RIOT_API_KEY")
-                    if not cls._instance.riot_api_key:
+                    riot_key = os.getenv("RIOT_API_KEY")
+                    if not riot_key:
                         raise ValueError("No Riot API Key found in Environment")
+                    else:
+                        cls._instance.riot_api_key = riot_key
 
                     # Initialize HTTP Client
                     cls._instance.client = httpx.AsyncClient()
@@ -62,7 +73,6 @@ class RiotHelper:
                         {"X-Riot-Token": cls._instance.riot_api_key}
                     )
                     cls._instance.limiter = Limiter(80 / 120)
-
         return cls._instance
 
     async def test_connection(self) -> bool:
@@ -124,7 +134,7 @@ class RiotHelper:
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}"
             match = await self._make_request(url)
             app_logger.debug(f"Match [{match_id}] fetched with Riot-API")
-            return match
+            return cast(Dict[str, Any], match)
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Match [{match_id}] with Riot-API: {e}"
@@ -142,7 +152,7 @@ class RiotHelper:
             url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{timeline_id}/timeline"
             timeline = await self._make_request(url)
             app_logger.debug(f"Timeline [{timeline_id}] fetched with Riot-API")
-            return timeline
+            return cast(Dict[str, Any], timeline)
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Timeline [{timeline_id}] with Riot-API: {e}"
@@ -165,7 +175,7 @@ class RiotHelper:
             app_logger.debug(
                 f"Fetched Matchlist [count={count}, offset={offset}] [{puuid}] with Riot-API"
             )
-            return match_list
+            return cast(list[str], match_list)
         except Exception as e:
             app_logger.error(
                 f"Error while fetching Matchlist [count={count}, offset={offset}] of Summoner [{puuid}] with Riot-API: {e}"
@@ -394,8 +404,8 @@ class RiotHelper:
             return []
 
 
-async def main():
-    rh = RiotHelper()
+async def main() -> None:
+    rh = RiotHelper.get_instance()
     await rh.get_items()
     await rh.get_champions()
 

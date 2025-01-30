@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from models.GlobalPydanticConfig import BaseConfig
 
 
-# TODO verify model
 class TacticalInfo(BaseModel):
     style: int
     difficulty: int

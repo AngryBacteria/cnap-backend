@@ -1,13 +1,14 @@
 import asyncio
 import sys
 from time import perf_counter
-from typing import Dict
+from typing import Dict, Any
 
 from fastapi import FastAPI, HTTPException, Request
 
 from helpers.DBHelper import (
     DBHelper,
     BasicFilter,
+    CollectionName,
 )
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
@@ -21,8 +22,8 @@ from models.ItemDTO import ItemDTO
 from models.MapDTO import MapDTO
 from models.QueueDTO import QueueDTO
 
-dbh = DBHelper()
-rh = RiotHelper()
+dbh = DBHelper.get_instance()
+rh = RiotHelper.get_instance()
 app = FastAPI()
 
 origins = [
@@ -39,7 +40,7 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """
     Verify all connections on startup.
     Exits the application if any connection fails.
@@ -62,7 +63,7 @@ async def startup_event():
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """Cleanup connections"""
     await dbh.disconnect()
     await rh.client.aclose()
@@ -70,7 +71,7 @@ async def shutdown_event():
 
 
 @app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
+async def add_process_time_header(request: Request, call_next: Any) -> Any:
     start_time = perf_counter()
     response = await call_next(request)
     process_time = (perf_counter() - start_time) * 1000
@@ -80,7 +81,7 @@ async def add_process_time_header(request: Request, call_next):
 
 
 @app.get("/static/champions/reduced")
-async def get_champions_reduced() -> list[dict]:
+async def get_champions_reduced() -> list[dict[str, Any]]:
     champions = await dbh.generic_get(
         BasicFilter(
             limit=100000,
@@ -94,16 +95,19 @@ async def get_champions_reduced() -> list[dict]:
                 "uncenteredSplashPath": 1,
             },
         ),
-        dbh.champion_collection,
+        CollectionName.CHAMPION,
     )
-    return champions
+    if len(champions) > 0:
+        return champions
+    else:
+        raise HTTPException(status_code=500, detail="No champion data available")
 
 
 @app.get("/static/champions/{champion_id}")
 async def get_champions(champion_id: int) -> ChampionDTO:
     champions = await dbh.generic_get(
         BasicFilter(limit=100000, filter={"id": champion_id}),
-        dbh.champion_collection,
+        CollectionName.CHAMPION,
         ChampionDTO,
     )
     if len(champions) > 0:
@@ -125,37 +129,48 @@ async def get_static_data() -> StaticDataResponse:
     # Run all queries concurrently
     game_modes, game_types, items, maps, queues = await asyncio.gather(
         dbh.generic_get(
-            BasicFilter(limit=100000), dbh.game_mode_collection, GameModeDTO
+            BasicFilter(limit=100000), CollectionName.GAME_MODE, GameModeDTO
         ),
         dbh.generic_get(
-            BasicFilter(limit=100000), dbh.game_type_collection, GameTypeDTO
+            BasicFilter(limit=100000), CollectionName.GAME_TYPE, GameTypeDTO
         ),
         dbh.generic_get(
             BasicFilter(
                 limit=100000,
                 project={
                     "_id": 0,
-                    "name": 1,
                     "id": 1,
-                    "iconPath": 1,
+                    "name": 1,
                     "description": 1,
                     "categories": 1,
+                    "price": 1,
+                    "priceTotal": 1,
+                    "iconPath": 1,
                 },
             ),
-            dbh.item_collection,
+            CollectionName.ITEM,
             ItemDTO,
         ),
-        dbh.generic_get(BasicFilter(limit=100000), dbh.map_collection, MapDTO),
-        dbh.generic_get(BasicFilter(limit=100000), dbh.queue_collection, QueueDTO),
+        dbh.generic_get(BasicFilter(limit=100000), CollectionName.MAP, MapDTO),
+        dbh.generic_get(BasicFilter(limit=100000), CollectionName.QUEUE, QueueDTO),
     )
 
-    return StaticDataResponse(
-        game_modes=game_modes,
-        game_types=game_types,
-        items=items,
-        maps=maps,
-        queues=queues,
-    )
+    if (
+        len(game_modes) > 0
+        and len(game_types) > 0
+        and len(items) > 0
+        and len(maps) > 0
+        and len(queues) > 0
+    ):
+        return StaticDataResponse(
+            game_modes=game_modes,
+            game_types=game_types,
+            items=items,
+            maps=maps,
+            queues=queues,
+        )
+    else:
+        raise HTTPException(status_code=500, detail="Some static data is not available")
 
 
 @app.get("/")

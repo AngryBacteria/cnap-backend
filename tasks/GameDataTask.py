@@ -1,31 +1,19 @@
 import asyncio
 
-from helpers.DBHelper import DBHelper
+from helpers.DBHelper import DBHelper, CollectionName
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 
 
+# TODO summoner spells, summoner icons
+
+
 class GameDataTask:
-    def __init__(self):
-        self.db_helper = DBHelper()
-        self.riot_helper = RiotHelper()
+    def __init__(self) -> None:
+        self.db_helper = DBHelper.get_instance()
+        self.riot_helper = RiotHelper.get_instance()
 
-    async def update_items(self):
-        items = await self.riot_helper.get_items()
-        if len(items) <= 0:
-            app_logger.error("No items found in CDN response")
-
-        else:
-            await self.db_helper.generic_upsert(
-                items,
-                "id",
-                self.db_helper.item_collection,
-                data_name="Item",
-                validator=None,
-            )
-            app_logger.debug("Items updated")
-
-    async def update_champions(self):
+    async def update_champions(self) -> None:
         champions = await self.riot_helper.get_champions()
         if len(champions) <= 0:
             app_logger.error("No champions found in CDN response")
@@ -34,13 +22,13 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 champions,
                 "id",
-                self.db_helper.champion_collection,
+                CollectionName.CHAMPION,
                 data_name="champion",
                 validator=None,
             )
             app_logger.debug("Champions updated")
 
-    async def update_game_modes(self):
+    async def update_game_modes(self) -> None:
         game_modes = await self.riot_helper.get_game_modes()
         if len(game_modes) <= 0:
             app_logger.error("No game modes found in CDN response")
@@ -49,12 +37,12 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 game_modes,
                 "gameMode",
-                self.db_helper.game_mode_collection,
+                CollectionName.GAME_MODE,
                 data_name="game mode",
             )
             app_logger.debug("Game modes updated")
 
-    async def update_game_types(self):
+    async def update_game_types(self) -> None:
         game_types = await self.riot_helper.get_game_types()
         if len(game_types) <= 0:
             app_logger.error("No game types found in CDN response")
@@ -63,12 +51,27 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 game_types,
                 "gametype",
-                self.db_helper.game_type_collection,
+                CollectionName.GAME_TYPE,
                 data_name="game type",
             )
             app_logger.debug("Game types updated")
 
-    async def update_maps(self):
+    async def update_items(self) -> None:
+        items = await self.riot_helper.get_items()
+        if len(items) <= 0:
+            app_logger.error("No items found in CDN response")
+
+        else:
+            await self.db_helper.generic_upsert(
+                items,
+                "id",
+                CollectionName.ITEM,
+                data_name="Item",
+                validator=None,
+            )
+            app_logger.debug("Items updated")
+
+    async def update_maps(self) -> None:
         maps = await self.riot_helper.get_maps()
         if len(maps) <= 0:
             app_logger.error("No maps found in CDN response")
@@ -77,12 +80,12 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 maps,
                 "mapId",
-                self.db_helper.map_collection,
+                CollectionName.MAP,
                 data_name="map",
             )
             app_logger.debug("Maps updated")
 
-    async def update_queues(self):
+    async def update_queues(self) -> None:
         queues = await self.riot_helper.get_queues()
         if len(queues) <= 0:
             app_logger.error("No queues found in CDN response")
@@ -91,21 +94,24 @@ class GameDataTask:
             await self.db_helper.generic_upsert(
                 queues,
                 "queueId",
-                self.db_helper.queue_collection,
+                CollectionName.QUEUE,
                 data_name="queue",
             )
             app_logger.debug("Queues updated")
 
+    async def update_everything(self) -> None:
+        await self.update_champions()
+        await self.update_game_modes()
+        await self.update_game_types()
+        await self.update_items()
+        await self.update_maps()
+        await self.update_queues()
+
 
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         game_data_task = GameDataTask()
-        await game_data_task.update_items()
-        await game_data_task.update_champions()
-        await game_data_task.update_game_modes()
-        await game_data_task.update_game_types()
-        await game_data_task.update_maps()
-        await game_data_task.update_queues()
+        await game_data_task.update_everything()
 
     asyncio.run(main())

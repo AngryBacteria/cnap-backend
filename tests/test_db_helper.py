@@ -1,6 +1,14 @@
+from typing import Any
+
 import pytest
 
-from helpers.DBHelper import DBHelper, BasicFilter, SummonerFilter, BasicMatchFilter
+from helpers.DBHelper import (
+    DBHelper,
+    BasicFilter,
+    SummonerFilter,
+    BasicMatchFilter,
+    CollectionName,
+)
 from models.ChampionDTO import ChampionDTO
 from models.GameModeDTO import GameModeDTO
 from models.GameTypeDTO import GameTypeDTO
@@ -20,8 +28,8 @@ match2_id = "EUW1_7075264366"
 
 
 @pytest.mark.asyncio
-async def test_queries():
-    dbh = DBHelper()
+async def test_queries() -> None:
+    dbh = DBHelper.get_instance()
     # summoner
     summoners = await dbh.get_summoners(SummonerFilter())
     assert len(summoners) > 0
@@ -106,26 +114,16 @@ async def test_queries():
     )
 
     # static game data
-    static_data = await dbh.generic_get(BasicFilter(), dbh.item_collection, ItemDTO)
-    assert len(static_data) > 0
-
-    static_data = await dbh.generic_get(
-        BasicFilter(), dbh.champion_collection, ChampionDTO
-    )
-    assert len(static_data) > 0
-
-    static_data = await dbh.generic_get(
-        BasicFilter(), dbh.game_mode_collection, GameModeDTO
-    )
-    assert len(static_data) > 0
-
-    static_data = await dbh.generic_get(
-        BasicFilter(), dbh.game_type_collection, GameTypeDTO
-    )
-    assert len(static_data) > 0
-
-    static_data = await dbh.generic_get(BasicFilter(), dbh.map_collection, MapDTO)
-    assert len(static_data) > 0
-
-    static_data = await dbh.generic_get(BasicFilter(), dbh.queue_collection, QueueDTO)
-    assert len(static_data) > 0
+    static_type_map = {
+        CollectionName.CHAMPION: ChampionDTO,
+        CollectionName.GAME_MODE: GameModeDTO,
+        CollectionName.GAME_TYPE: GameTypeDTO,
+        CollectionName.ITEM: ItemDTO,
+        CollectionName.MAP: MapDTO,
+        CollectionName.QUEUE: QueueDTO,
+    }
+    for collection_type, dto_type in static_type_map.items():
+        static_data: list[Any] = await dbh.generic_get(
+            BasicFilter(), collection_type, dto_type
+        )
+        assert len(static_data) > 0

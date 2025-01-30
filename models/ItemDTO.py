@@ -5,7 +5,6 @@ from typing import List
 from models.GlobalPydanticConfig import BaseConfig
 
 
-# TODO verify model
 class ItemDTO(BaseConfig):
     id: int
     name: str

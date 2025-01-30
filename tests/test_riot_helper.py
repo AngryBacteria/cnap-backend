@@ -12,38 +12,56 @@ match2_id = "EUW1_7075264366"
 
 
 @pytest.mark.asyncio
-async def test_queries():
-    rh = RiotHelper()
+async def test_queries() -> None:
+    rh = RiotHelper.get_instance()
     # summoner / account
     summoner1 = await rh.get_summoner_by_account_tag("AngryBacteria", "cnap")
     summoner2 = await rh.get_summoner_by_puuid_riot(angrybacteria_puuid)
     account1 = await rh.get_riot_account_by_tag("AngryBacteria", "cnap")
     account2 = await rh.get_riot_account_by_puuid(angrybacteria_puuid)
-    assert summoner1.puuid == angrybacteria_puuid
-    assert summoner2.puuid == angrybacteria_puuid
-    assert account1.puuid == angrybacteria_puuid
-    assert account2.puuid == angrybacteria_puuid
+    if summoner1 is None or summoner2 is None or account1 is None or account2 is None:
+        assert False
+    else:
+        assert summoner1.puuid == angrybacteria_puuid
+        assert summoner2.puuid == angrybacteria_puuid
+        assert account1.puuid == angrybacteria_puuid
+        assert account2.puuid == angrybacteria_puuid
 
-    assert summoner1.gameName == angrybacteria_gameName
-    assert summoner2.gameName == angrybacteria_gameName
-    assert account1.gameName == angrybacteria_gameName
-    assert account2.gameName == angrybacteria_gameName
+        assert summoner1.gameName == angrybacteria_gameName
+        assert summoner2.gameName == angrybacteria_gameName
+        assert account1.gameName == angrybacteria_gameName
+        assert account2.gameName == angrybacteria_gameName
 
     # match
     match = await rh.get_match(match1_id)
-    assert match["metadata"]["matchId"] == match1_id
+    if match is None:
+        assert False
+    else:
+        assert match["metadata"]["matchId"] == match1_id
+
     match = await rh.get_match(match2_id)
-    assert match["metadata"]["matchId"] == match2_id
+    if match is None:
+        assert False
+    else:
+        assert match["metadata"]["matchId"] == match2_id
     match = await rh.get_match("does-not-exist")
     assert match is None
 
     # timeline
     timeline = await rh.get_timeline(match1_id)
-    assert timeline["metadata"]["matchId"] == match1_id
-    assert timeline is not None
+    if timeline is None:
+        assert False
+    else:
+        assert timeline["metadata"]["matchId"] == match1_id
+        assert timeline is not None
+
     timeline = await rh.get_timeline(match2_id)
-    assert timeline["metadata"]["matchId"] == match2_id
-    assert timeline is not None
+    if timeline is None:
+        assert False
+    else:
+        assert timeline["metadata"]["matchId"] == match2_id
+        assert timeline is not None
+
     timeline = await rh.get_timeline("does-not-exist")
     assert timeline is None
 

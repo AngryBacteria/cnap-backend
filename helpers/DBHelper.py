@@ -1,27 +1,44 @@
 import asyncio
-import os
-from threading import Lock
-from typing import Dict, Any, Mapping, Literal, Union, Type, TypeVar, overload, Sequence
 
-from dotenv import load_dotenv
+from typing import Dict, Literal, Union, Type, TypeVar, overload, Sequence
+
 from motor.motor_asyncio import (
-    AsyncIOMotorClient,
-    AsyncIOMotorDatabase,
     AsyncIOMotorCollection,
 )
-from pydantic import BaseModel, Field
-from pymongo import UpdateOne
 
+from pymongo import UpdateOne
 from helpers.Logger import app_logger
 from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
 
 
+import os
+from enum import Enum
+from threading import Lock
+from typing import Optional, Mapping, Any
+
+from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pydantic import BaseModel, Field
+
+
+class CollectionName(str, Enum):
+    CHAMPION = "champion"
+    GAME_MODE = "game_mode"
+    GAME_TYPE = "game_type"
+    ITEM = "item"
+    MAP = "map"
+    MATCH = "match_v5"
+    QUEUE = "queue"
+    SUMMONER = "summoner"
+    TIMELINE = "timeline_v5"
+
+
 class BasicFilter(BaseModel):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
-    project: dict = Field(default={"_id": 0}, description="Fields to return")
-    filter: dict = Field(default={}, description="Filter to apply")
+    project: dict[str, int] = Field(default={"_id": 0}, description="Fields to return")
+    filter: dict[str, Any] = Field(default={}, description="Filter to apply")
 
 
 class BasicMatchFilter(BaseModel):
@@ -47,10 +64,10 @@ class SummonerFilter(BaseModel):
     summonerLevel: int = Field(default=-1, description="Summoner level to filter by")
 
 
-def get_nested_value(item: Union[dict, BaseModel], nested_key: str) -> Any:
+def get_nested_value(item: Union[dict[str, Any], BaseModel], nested_key: str) -> Any:
     """Helper function to get value from nested dictionary or Pydantic model using dot notation"""
     keys = nested_key.split(".")
-    current: Union[Dict, BaseModel, Any] = item
+    current: Union[dict[str, Any], BaseModel, Any] = item
 
     for key in keys:
         if isinstance(current, BaseModel):
@@ -70,27 +87,25 @@ def get_nested_value(item: Union[dict, BaseModel], nested_key: str) -> Any:
     return current
 
 
-# Make this shit more type safe
 class DBHelper:
-    _instance: Any = None
+    _instance: Optional["DBHelper"] = None
     _lock: Lock = Lock()
+    _initialized: bool = False
     mongo_client: AsyncIOMotorClient[Mapping[str, Any]]
     database: AsyncIOMotorDatabase[Mapping[str, Any]]
-    # collections
-    champion_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    game_mode_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    game_type_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    item_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    map_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    match_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    queue_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    summoner_collection: AsyncIOMotorCollection[Mapping[str, Any]]
-    timeline_collection: AsyncIOMotorCollection[Mapping[str, Any]]
 
-    def __new__(cls) -> Any:
-        if cls._instance is None:
+    def __init__(self) -> None:
+        raise RuntimeError("Call get_instance() instead")
+
+    def __new__(cls) -> "DBHelper":
+        raise RuntimeError("Call get_instance() instead")
+
+    @classmethod
+    def get_instance(cls) -> "DBHelper":
+        # Double-checked locking pattern
+        if not cls._instance:
             with cls._lock:
-                if cls._instance is None:
+                if not cls._instance:
                     cls._instance = super().__new__(cls)
                     load_dotenv()
 
@@ -103,34 +118,6 @@ class DBHelper:
                         cls._instance.database = (
                             cls._instance.mongo_client.get_database("cnap")
                         )
-                        # collections
-                        cls._instance.champion_collection = (
-                            cls._instance.database.get_collection("champion")
-                        )
-                        cls._instance.game_mode_collection = (
-                            cls._instance.database.get_collection("game_mode")
-                        )
-                        cls._instance.game_type_collection = (
-                            cls._instance.database.get_collection("game_type")
-                        )
-                        cls._instance.item_collection = (
-                            cls._instance.database.get_collection("item")
-                        )
-                        cls._instance.map_collection = (
-                            cls._instance.database.get_collection("map")
-                        )
-                        cls._instance.match_collection = (
-                            cls._instance.database.get_collection("match_v5")
-                        )
-                        cls._instance.queue_collection = (
-                            cls._instance.database.get_collection("queue")
-                        )
-                        cls._instance.summoner_collection = (
-                            cls._instance.database.get_collection("summoner")
-                        )
-                        cls._instance.timeline_collection = (
-                            cls._instance.database.get_collection("timeline_v5")
-                        )
 
                     else:
                         raise ValueError(
@@ -138,7 +125,12 @@ class DBHelper:
                         )
         return cls._instance
 
-    async def disconnect(self):
+    def get_collection(
+        self, name: CollectionName
+    ) -> AsyncIOMotorCollection[Mapping[str, Any]]:
+        return self.database.get_collection(name.value)
+
+    async def disconnect(self) -> None:
         self.mongo_client.close()
         app_logger.debug("Disconnected from MongoDB")
 
@@ -158,39 +150,63 @@ class DBHelper:
             )
             return False
 
-    async def init_indexes(self):
+    async def init_indexes(self) -> None:
         try:
-            await self.summoner_collection.create_index("puuid", unique=True)
+            await self.get_collection(CollectionName.SUMMONER).create_index(
+                "puuid", unique=True
+            )
             app_logger.debug("Created summoner indexes")
 
-            await self.match_collection.create_index("metadata.matchId", unique=True)
-            await self.match_collection.create_index(
+            await self.get_collection(CollectionName.MATCH).create_index(
+                "metadata.matchId", unique=True
+            )
+            await self.get_collection(CollectionName.MATCH).create_index(
                 "metadata.participants", unique=False
             )
-            await self.match_collection.create_index("info.gameCreation", unique=False)
-            await self.match_collection.create_index("info.queueId", unique=False)
-            await self.match_collection.create_index("info.gameMode", unique=False)
-            await self.match_collection.create_index("info.gameType", unique=False)
+            await self.get_collection(CollectionName.MATCH).create_index(
+                "info.gameCreation", unique=False
+            )
+            await self.get_collection(CollectionName.MATCH).create_index(
+                "info.queueId", unique=False
+            )
+            await self.get_collection(CollectionName.MATCH).create_index(
+                "info.gameMode", unique=False
+            )
+            await self.get_collection(CollectionName.MATCH).create_index(
+                "info.gameType", unique=False
+            )
             app_logger.debug("Created match indexes")
 
-            await self.timeline_collection.create_index("metadata.matchId", unique=True)
-            await self.timeline_collection.create_index(
+            await self.get_collection(CollectionName.TIMELINE).create_index(
+                "metadata.matchId", unique=True
+            )
+            await self.get_collection(CollectionName.TIMELINE).create_index(
                 "metadata.participants", unique=False
             )
             app_logger.debug("Created timeline indexes")
 
-            await self.champion_collection.create_index("id", unique=True)
-            await self.champion_collection.create_index("key", unique=True)
-            await self.game_mode_collection.create_index("gameMode", unique=True)
-            await self.game_type_collection.create_index("gametype", unique=True)
-            await self.item_collection.create_index("id", unique=True)
-            await self.map_collection.create_index("mapId", unique=True)
-            await self.queue_collection.create_index("queueId", unique=True)
+            await self.get_collection(CollectionName.CHAMPION).create_index(
+                "id", unique=True
+            )
+            await self.get_collection(CollectionName.GAME_MODE).create_index(
+                "gameMode", unique=True
+            )
+            await self.get_collection(CollectionName.GAME_TYPE).create_index(
+                "gametype", unique=True
+            )
+            await self.get_collection(CollectionName.ITEM).create_index(
+                "id", unique=True
+            )
+            await self.get_collection(CollectionName.MAP).create_index(
+                "mapId", unique=True
+            )
+            await self.get_collection(CollectionName.QUEUE).create_index(
+                "queueId", unique=True
+            )
             app_logger.debug("Created static data indexes")
 
             app_logger.debug("All indexes created successfully")
 
-            return True
         except Exception as error:
             app_logger.error(f"Error creating indexes: {error}")
 
@@ -206,13 +222,13 @@ class DBHelper:
 
             ids_set = set(ids)
             if entity_name == "MatchV5":
-                existing_ids = await self.match_collection.distinct(
+                existing_ids = await self.get_collection(CollectionName.MATCH).distinct(
                     id_field, {id_field: {"$in": list(ids_set)}}
                 )
             elif entity_name == "TimelineV5":
-                existing_ids = await self.timeline_collection.distinct(
-                    id_field, {id_field: {"$in": list(ids_set)}}
-                )
+                existing_ids = await self.get_collection(
+                    CollectionName.TIMELINE
+                ).distinct(id_field, {id_field: {"$in": list(ids_set)}})
             else:
                 raise ValueError(f"Invalid entity name: {entity_name}")
 
@@ -228,7 +244,7 @@ class DBHelper:
             )
             return []
 
-    async def get_matches(self, match_filter: BasicMatchFilter) -> list[Dict]:
+    async def get_matches(self, match_filter: BasicMatchFilter) -> list[dict[str, Any]]:
         identifier = "Timeline" if match_filter.timeline else "Match"
         try:
             db_filter: Dict[str, Any] = {}
@@ -246,9 +262,9 @@ class DBHelper:
                 db_filter["info.gameType"] = match_filter.match_type
 
             collection = (
-                self.timeline_collection
+                self.get_collection(CollectionName.TIMELINE)
                 if match_filter.timeline
-                else self.match_collection
+                else self.get_collection(CollectionName.MATCH)
             )
             cursor = (
                 collection.find(db_filter, {"_id": 0})
@@ -277,7 +293,8 @@ class DBHelper:
                 db_filter["summonerLevel"] = summoner_filter.summonerLevel
 
             cursor = (
-                self.summoner_collection.find(db_filter, {"_id": 0})
+                self.get_collection(CollectionName.SUMMONER)
+                .find(db_filter, {"_id": 0})
                 .skip(summoner_filter.offset)
                 .limit(summoner_filter.limit)
             )
@@ -294,31 +311,34 @@ class DBHelper:
 
     @overload
     async def generic_get(
-        self, base_filter: BasicFilter, collection: AsyncIOMotorCollection
-    ) -> list[dict]: ...
+        self, base_filter: BasicFilter, collection_name: CollectionName
+    ) -> list[dict[str, Any]]: ...
 
     @overload
     async def generic_get(
         self,
         base_filter: BasicFilter,
-        collection: AsyncIOMotorCollection,
+        collection_name: CollectionName,
         validator: type[GenericModel],
     ) -> list[GenericModel]: ...
 
     async def generic_get(
         self,
         base_filter: BasicFilter,
-        collection: AsyncIOMotorCollection,
+        collection_name: CollectionName,
         validator: type[GenericModel] | None = None,
-    ) -> list[GenericModel] | list[Dict]:
+    ) -> list[GenericModel] | list[dict[str, Any]]:
         try:
             cursor = (
-                collection.find(base_filter.filter, base_filter.project)
+                self.get_collection(collection_name)
+                .find(base_filter.filter, base_filter.project)
                 .skip(base_filter.offset)
                 .limit(base_filter.limit)
             )
             data_raw = await cursor.to_list(length=None)
-            app_logger.debug(f"Got {len(data_raw)} objects from DB")
+            app_logger.debug(
+                f"Got {len(data_raw)} {collection_name.value} objects from DB"
+            )
 
             if validator:
                 return [validator.model_validate(data) for data in data_raw]
@@ -331,10 +351,10 @@ class DBHelper:
     # TODO fix double validation
     async def generic_upsert(
         self,
-        data: Union[Sequence[dict], Sequence[BaseModel]],
+        data: Union[Sequence[dict[str, Any]], Sequence[BaseModel]],
         key_field: str,
-        collection: AsyncIOMotorCollection,
-        data_name="Generic Data",
+        collection_name: CollectionName,
+        data_name: str = "Generic Data",
         validator: Type[BaseModel] | None = None,
     ) -> bool:
         try:
@@ -359,7 +379,7 @@ class DBHelper:
                 for item in converted_data
             ]
 
-            result = await collection.bulk_write(bulk_ops)
+            result = await self.get_collection(collection_name).bulk_write(bulk_ops)
             app_logger.debug(
                 f"Upserted {result.upserted_count} | Modified {result.modified_count} | Inserted {result.inserted_count} --> {data_name}"
             )
@@ -369,10 +389,10 @@ class DBHelper:
             return False
 
 
-async def main():
-    dbh = DBHelper()
+async def main() -> None:
+    dbh = DBHelper.get_instance()
     await dbh.generic_get(
-        BasicFilter(limit=100000), dbh.item_collection, validator=ItemDTO
+        BasicFilter(limit=100000), CollectionName.ITEM, validator=ItemDTO
     )
 
 

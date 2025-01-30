@@ -1,16 +1,18 @@
 import asyncio
 
-from helpers.DBHelper import DBHelper, SummonerFilter
+from helpers.DBHelper import DBHelper, SummonerFilter, CollectionName
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 
 
 class MatchTasks:
-    def __init__(self):
-        self.db_helper = DBHelper()
-        self.riot_helper = RiotHelper()
+    def __init__(self) -> None:
+        self.db_helper = DBHelper.get_instance()
+        self.riot_helper = RiotHelper.get_instance()
 
-    async def update_match_data(self, count=69, offset=0, puuid=""):
+    async def update_match_data(
+        self, count: int = 69, offset: int = 0, puuid: str = ""
+    ) -> None:
         existing_summoners = await self.db_helper.get_summoners(
             SummonerFilter(limit=10000, puuid=puuid)
         )
@@ -40,7 +42,7 @@ class MatchTasks:
                 await self.db_helper.generic_upsert(
                     match_data,
                     "metadata.matchId",
-                    self.db_helper.match_collection,
+                    CollectionName.MATCH,
                     "Match",
                     None,
                 )
@@ -54,18 +56,18 @@ class MatchTasks:
                 await self.db_helper.generic_upsert(
                     timeline_data,
                     "metadata.matchId",
-                    self.db_helper.timeline_collection,
+                    CollectionName.TIMELINE,
                     "Timeline",
                     None,
                 )
 
-    async def fill_match_data(self, puuid=""):
+    async def fill_match_data(self, puuid: str = "") -> None:
         for i in range(0, 2000, 95):
             app_logger.debug(f"INSERTING WITH I = {i}")
             await self.update_match_data(95, i, puuid)
 
 
-async def main():
+async def main() -> None:
     match_tasks = MatchTasks()
     await match_tasks.fill_match_data(
         puuid="sUl1DJpnjR6C4eSv5O_r2tgnEfs_5o-5GSTG3Xs6v8mYFIIg-uC1CAZDYOP02xh6Yx9g5EE92KuuVA"

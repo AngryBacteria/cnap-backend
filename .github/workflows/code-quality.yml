@@ -23,7 +23,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run mypy linting
-      run: mypy .
+      run: mypy --strict .
 
     - name: Run ruff checking
       run: ruff check .
