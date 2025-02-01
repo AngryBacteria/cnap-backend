@@ -30,6 +30,28 @@ match2_id = "EUW1_7075264366"
 @pytest.mark.asyncio
 async def test_queries() -> None:
     dbh = DBHelper.get_instance()
+    dbh2 = DBHelper.get_instance()
+    assert dbh == dbh2
+
+    with pytest.raises(Exception):
+        DBHelper()
+
+    is_connectable = await dbh.test_connection()
+    assert is_connectable
+
+    indexes_created = await dbh.init_indexes()
+    assert indexes_created
+
+    # test non-existing match ids
+    do_exist = [match1_id, match2_id]
+    do_not_exist = ["i do not exist", "euw_23432948723894722230848239047892"]
+
+    db_response = await dbh.get_non_existing_match_ids(
+        do_exist + do_not_exist, "MatchV5"
+    )
+    assert all(match_id not in db_response for match_id in do_exist)
+    assert all(match_id in db_response for match_id in do_not_exist)
+
     # summoner
     summoners = await dbh.get_summoners(SummonerFilter())
     assert len(summoners) > 0

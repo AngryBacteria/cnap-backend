@@ -19,6 +19,8 @@ from models.MapDTO import MapDTO
 from models.QueueDTO import QueueDTO
 from models.SummonerDTO import SummonerDTO
 from models.SummonerDTODB import SummonerDTODB
+from models.SummonerIconDTO import SummonerIconDTO
+from models.SummonerSpellDTO import SummonerSpellDTO
 
 
 def map_asset_path(input_path: str | None, plugin: str = "rcp-be-lol-game-data") -> str:
@@ -303,6 +305,7 @@ class RiotHelper:
                     f"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/{champion_summary['id']}.json",
                     use_limiter=False,
                 )
+
                 if len(champion_data_raw["skins"]) > 0:
                     champion_data_raw["uncenteredSplashPath"] = champion_data_raw[
                         "skins"
@@ -403,11 +406,47 @@ class RiotHelper:
             app_logger.error(f"Error while fetching Queues with Riot-CDN: {e}")
             return []
 
+    async def get_summoner_icons(self) -> Sequence[SummonerIconDTO]:
+        try:
+            raw_data = await self._make_request(
+                "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-icons.json",
+                use_limiter=False,
+            )
+
+            icons = [SummonerIconDTO.model_validate(data) for data in raw_data]
+            for icon in icons:
+                if icon.imagePath:
+                    icon.imagePath = map_asset_path(icon.imagePath)
+
+            app_logger.debug(f"Fetched {len(icons)} Summoner Icons with Riot-CDN")
+            return icons
+        except Exception as e:
+            app_logger.error(f"Error while fetching Summoner Icons with Riot-CDN: {e}")
+            return []
+
+    async def get_summoner_spells(self) -> Sequence[SummonerSpellDTO]:
+        try:
+            raw_data = await self._make_request(
+                "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-spells.json",
+                use_limiter=False,
+            )
+            spells = [
+                SummonerSpellDTO.model_validate(data) for data in raw_data
+            ]
+            for spell in spells:
+                spell.iconPath = map_asset_path(spell.iconPath)
+
+            app_logger.debug(f"Fetched {len(spells)} Summoner Spells with Riot-CDN")
+            return spells
+        except Exception as e:
+            app_logger.error(f"Error while fetching Summoner Spells with Riot-CDN: {e}")
+            return []
+
 
 async def main() -> None:
     rh = RiotHelper.get_instance()
-    await rh.get_items()
-    await rh.get_champions()
+    huh = await rh.get_summoner_spells()
+    print(huh)
 
 
 if __name__ == "__main__":

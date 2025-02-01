@@ -14,6 +14,15 @@ match2_id = "EUW1_7075264366"
 @pytest.mark.asyncio
 async def test_queries() -> None:
     rh = RiotHelper.get_instance()
+    rh2 = RiotHelper.get_instance()
+    assert rh == rh2
+
+    with pytest.raises(Exception):
+        rh = RiotHelper()
+
+    is_connectable = rh.test_connection()
+    assert is_connectable
+
     # summoner / account
     summoner1 = await rh.get_summoner_by_account_tag("AngryBacteria", "cnap")
     summoner2 = await rh.get_summoner_by_puuid_riot(angrybacteria_puuid)
@@ -96,3 +105,11 @@ async def test_queries() -> None:
     queues = await rh.get_queues()
     assert queues is not None
     assert len(queues) > 0
+
+    icons = await rh.get_summoner_icons()
+    assert icons is not None
+    assert len(icons) > 0
+
+    spells = await rh.get_summoner_spells()
+    assert spells is not None
+    assert len(spells) > 0

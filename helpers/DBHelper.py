@@ -8,6 +8,7 @@ from motor.motor_asyncio import (
 
 from pymongo import UpdateOne
 from helpers.Logger import app_logger
+from models.GlobalPydanticConfig import BaseConfig
 from models.ItemDTO import ItemDTO
 from models.SummonerDTODB import SummonerDTODB
 
@@ -31,17 +32,19 @@ class CollectionName(str, Enum):
     MATCH = "match_v5"
     QUEUE = "queue"
     SUMMONER = "summoner"
+    SUMMONER_ICON = "summoner_icon"
+    SUMMONER_SPELL = "summoner_spell"
     TIMELINE = "timeline_v5"
 
 
-class BasicFilter(BaseModel):
+class BasicFilter(BaseConfig):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
     project: dict[str, int] = Field(default={"_id": 0}, description="Fields to return")
     filter: dict[str, Any] = Field(default={}, description="Filter to apply")
 
 
-class BasicMatchFilter(BaseModel):
+class BasicMatchFilter(BaseConfig):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
     participant_puuids: list[str] = Field(
@@ -56,7 +59,7 @@ class BasicMatchFilter(BaseModel):
     timeline: bool = Field(default=False, description="Whether to fetch timeline data")
 
 
-class SummonerFilter(BaseModel):
+class SummonerFilter(BaseConfig):
     offset: int = Field(default=0, ge=0, description="Number of items to skip")
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
     puuid: str = Field(default="", description="Summoner PUUID to filter by")
@@ -150,7 +153,7 @@ class DBHelper:
             )
             return False
 
-    async def init_indexes(self) -> None:
+    async def init_indexes(self) -> bool:
         try:
             await self.get_collection(CollectionName.SUMMONER).create_index(
                 "puuid", unique=True
@@ -206,9 +209,11 @@ class DBHelper:
             app_logger.debug("Created static data indexes")
 
             app_logger.debug("All indexes created successfully")
+            return True
 
         except Exception as error:
             app_logger.error(f"Error creating indexes: {error}")
+            return False
 
     async def get_non_existing_match_ids(
         self,

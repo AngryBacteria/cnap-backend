@@ -99,6 +99,34 @@ class GameDataTask:
             )
             app_logger.debug("Queues updated")
 
+    async def update_summoner_icons(self) -> None:
+        summoner_icons = await self.riot_helper.get_summoner_icons()
+        if len(summoner_icons) <= 0:
+            app_logger.error("No summoner icons found in CDN response")
+
+        else:
+            await self.db_helper.generic_upsert(
+                summoner_icons,
+                "id",
+                CollectionName.SUMMONER_ICON,
+                data_name="summoner_icon",
+            )
+            app_logger.debug("Summoner icons updated")
+
+    async def update_summoner_spells(self) -> None:
+        summoner_spells = await self.riot_helper.get_summoner_spells()
+        if len(summoner_spells) <= 0:
+            app_logger.error("No summoner spells found in CDN response")
+
+        else:
+            await self.db_helper.generic_upsert(
+                summoner_spells,
+                "id",
+                CollectionName.SUMMONER_SPELL,
+                data_name="summoner_spell",
+            )
+            app_logger.debug("Summoner spells updated")
+
     async def update_everything(self) -> None:
         await self.update_champions()
         await self.update_game_modes()
@@ -106,6 +134,8 @@ class GameDataTask:
         await self.update_items()
         await self.update_maps()
         await self.update_queues()
+        await self.update_summoner_icons()
+        await self.update_summoner_spells()
 
 
 if __name__ == "__main__":
