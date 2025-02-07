@@ -1,16 +1,15 @@
 import asyncio
 
-from typing import Dict, Literal, Union, Type, TypeVar, overload, Sequence
+from typing import Literal, Union, Type, TypeVar, overload, Sequence
 
 from motor.motor_asyncio import (
     AsyncIOMotorCollection,
+    AsyncIOMotorGridFSBucket,
 )
 
 from pymongo import UpdateOne
 from helpers.Logger import app_logger
 from models.GlobalPydanticConfig import BaseConfig
-from models.ItemDTO import ItemDTO
-from models.SummonerDTODB import SummonerDTODB
 
 
 import os
@@ -21,6 +20,7 @@ from typing import Optional, Mapping, Any
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
+from models.ItemDTO import ItemDTO
 
 
 class CollectionName(str, Enum):
@@ -42,29 +42,6 @@ class BasicFilter(BaseConfig):
     limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
     project: dict[str, int] = Field(default={"_id": 0}, description="Fields to return")
     filter: dict[str, Any] = Field(default={}, description="Filter to apply")
-
-
-class BasicMatchFilter(BaseConfig):
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
-    participant_puuids: list[str] = Field(
-        default=[], description="List of participant PUUIDs to filter by"
-    )
-    match_ids: list[str] = Field(
-        default=[], description="List of match IDs to filter by"
-    )
-    queue: int = Field(default=-1, description="Queue ID to filter by")
-    mode: str = Field(default="", description="Game mode to filter by")
-    match_type: str = Field(default="", description="Match type to filter by")
-    timeline: bool = Field(default=False, description="Whether to fetch timeline data")
-
-
-class SummonerFilter(BaseConfig):
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    limit: int = Field(default=5, ge=1, description="Maximum number of items to return")
-    puuid: str = Field(default="", description="Summoner PUUID to filter by")
-    accountId: str = Field(default="", description="Account ID to filter by")
-    summonerLevel: int = Field(default=-1, description="Summoner level to filter by")
 
 
 def get_nested_value(item: Union[dict[str, Any], BaseModel], nested_key: str) -> Any:
@@ -249,69 +226,6 @@ class DBHelper:
             )
             return []
 
-    async def get_matches(self, match_filter: BasicMatchFilter) -> list[dict[str, Any]]:
-        identifier = "Timeline" if match_filter.timeline else "Match"
-        try:
-            db_filter: Dict[str, Any] = {}
-            if match_filter.participant_puuids:
-                db_filter["metadata.participants"] = {
-                    "$all": match_filter.participant_puuids
-                }
-            if len(match_filter.match_ids):
-                db_filter["metadata.matchId"] = {"$in": match_filter.match_ids}
-            if match_filter.queue != -1:
-                db_filter["info.queueId"] = match_filter.queue
-            if len(match_filter.mode) > 0:
-                db_filter["info.gameMode"] = match_filter.mode
-            if len(match_filter.match_type) > 0:
-                db_filter["info.gameType"] = match_filter.match_type
-
-            collection = (
-                self.get_collection(CollectionName.TIMELINE)
-                if match_filter.timeline
-                else self.get_collection(CollectionName.MATCH)
-            )
-            cursor = (
-                collection.find(db_filter, {"_id": 0})
-                .sort("info.gameCreation", -1)
-                .skip(match_filter.offset)
-                .limit(match_filter.limit)
-            )
-            cursor_list = await cursor.to_list(length=None)
-            app_logger.debug(f"Got {len(cursor_list)} {identifier} objects from DB")
-            return cursor_list
-        except Exception as error:
-            app_logger.error(f"Error getting {identifier} with MongoDB: ", error)
-            return []
-
-    async def get_summoners(
-        self, summoner_filter: SummonerFilter
-    ) -> list[SummonerDTODB]:
-        try:
-            db_filter: Dict[str, Any] = {}
-
-            if len(summoner_filter.puuid) > 0:
-                db_filter["puuid"] = summoner_filter.puuid
-            if len(summoner_filter.accountId) > 0:
-                db_filter["accountId"] = summoner_filter.accountId
-            if summoner_filter.summonerLevel != -1:
-                db_filter["summonerLevel"] = summoner_filter.summonerLevel
-
-            cursor = (
-                self.get_collection(CollectionName.SUMMONER)
-                .find(db_filter, {"_id": 0})
-                .skip(summoner_filter.offset)
-                .limit(summoner_filter.limit)
-            )
-            summoners_raw = await cursor.to_list(length=None)
-            app_logger.debug(f"Got {len(summoners_raw)} Summoner objects from DB")
-            return [
-                SummonerDTODB.model_validate(summoner) for summoner in summoners_raw
-            ]
-        except Exception as error:
-            app_logger.error("Error getting Summoners with MongoDB: ", error)
-            return []
-
     GenericModel = TypeVar("GenericModel", bound=BaseModel)
 
     @overload
@@ -396,9 +310,10 @@ class DBHelper:
 
 async def main() -> None:
     dbh = DBHelper.get_instance()
-    await dbh.generic_get(
+    items = await dbh.generic_get(
         BasicFilter(limit=100000), CollectionName.ITEM, validator=ItemDTO
     )
+    print(items)
 
 
 if __name__ == "__main__":

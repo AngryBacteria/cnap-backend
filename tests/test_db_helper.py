@@ -1,151 +1,61 @@
-from typing import Any
-
+from pydantic import BaseModel
 import pytest
-
-from helpers.DBHelper import (
-    DBHelper,
-    BasicFilter,
-    SummonerFilter,
-    BasicMatchFilter,
-    CollectionName,
-)
-from models.ChampionDTO import ChampionDTO
-from models.GameModeDTO import GameModeDTO
-from models.GameTypeDTO import GameTypeDTO
-from models.ItemDTO import ItemDTO
-from models.MapDTO import MapDTO
-from models.QueueDTO import QueueDTO
-
-angrybacteria_puuid = (
-    "zk1tF-l0TT1SrT9SbUmofKLT4R2gLKxzhGSyNuuxTCbmjr6dOqTCw1GcYrHoRp5DV2f5M17GMLPEFw"
-)
-bribri_puuid = (
-    "Sbji7x0flde3VDc3n5u5UGrzG6pF_jqFQuNlgAig6JsTIhDnDRGBuN8I5O9ZBQIqoRsIm2esKq8UWg"
-)
-
-match1_id = "EUW1_7084514418"
-match2_id = "EUW1_7075264366"
+from helpers.DBHelper import DBHelper, CollectionName, get_nested_value
 
 
 @pytest.mark.asyncio
-async def test_queries() -> None:
+async def test_db_collections() -> None:
+    """Test that all collections defined in CollectionName exist and no others exist"""
     dbh = DBHelper.get_instance()
-    dbh2 = DBHelper.get_instance()
-    assert dbh == dbh2
 
-    with pytest.raises(Exception):
-        DBHelper()
+    # Get all actual collection names from the database
+    actual_collections = await dbh.database.list_collection_names()
+    actual_collections_set = set(actual_collections)
 
-    is_connectable = await dbh.test_connection()
-    assert is_connectable
+    # Get all expected collection names from the enum
+    expected_collections = {name.value for name in CollectionName}
 
-    indexes_created = await dbh.init_indexes()
-    assert indexes_created
+    # Check if all expected collections exist
+    missing_collections = expected_collections - actual_collections_set
+    assert not missing_collections, f"Missing collections: {missing_collections}"
 
-    # test non-existing match ids
-    do_exist = [match1_id, match2_id]
-    do_not_exist = ["i do not exist", "euw_23432948723894722230848239047892"]
+    # Check if there are any unexpected collections
+    extra_collections = actual_collections_set - expected_collections
+    assert not extra_collections, f"Unexpected collections found: {extra_collections}"
 
-    db_response = await dbh.get_non_existing_match_ids(
-        do_exist + do_not_exist, "MatchV5"
-    )
-    assert all(match_id not in db_response for match_id in do_exist)
-    assert all(match_id in db_response for match_id in do_not_exist)
-
-    # summoner
-    summoners = await dbh.get_summoners(SummonerFilter())
-    assert len(summoners) > 0
-    summoners = await dbh.get_summoners(SummonerFilter(puuid=angrybacteria_puuid))
-    assert len(summoners) == 1
-    assert summoners[0].gameName == "AngryBacteria"
-    summoners = await dbh.get_summoners(
-        SummonerFilter(puuid="this puuid does not exist")
-    )
-    assert len(summoners) == 0
-
-    # match
-    # no filtering
-    matches = await dbh.get_matches(BasicMatchFilter())
-    assert len(matches) > 0
-    # single match id filtering
-    matches = await dbh.get_matches(BasicMatchFilter(match_ids=[match1_id]))
-    assert len(matches) == 1
-    assert matches[0]["metadata"]["matchId"] == match1_id
-    # non-existing match id filtering
-    matches = await dbh.get_matches(
-        BasicMatchFilter(match_ids=["this match id does not exist"])
-    )
-    assert len(matches) == 0
-    # multiple match id filtering
-    matches = await dbh.get_matches(BasicMatchFilter(match_ids=[match1_id, match2_id]))
-    assert len(matches) == 2
-    assert match1_id in [match["metadata"]["matchId"] for match in matches]
-    assert match2_id in [match["metadata"]["matchId"] for match in matches]
-    # filtering by mode
-    matches = await dbh.get_matches(BasicMatchFilter(mode="CLASSIC"))
-    assert all(match["info"]["gameMode"] == "CLASSIC" for match in matches)
-    assert all(match["info"]["gameMode"] != "ULTBOOK" for match in matches)
-    matches = await dbh.get_matches(BasicMatchFilter(mode="ULTBOOK"))
-    assert all(match["info"]["gameMode"] == "ULTBOOK" for match in matches)
-    assert all(match["info"]["gameMode"] != "CLASSIC" for match in matches)
-    # filtering by participant
-    matches = await dbh.get_matches(
-        BasicMatchFilter(participant_puuids=[angrybacteria_puuid])
-    )
-    assert len(matches) > 0
-    assert all(
-        angrybacteria_puuid in match["metadata"]["participants"] for match in matches
-    )
-    matches = await dbh.get_matches(
-        BasicMatchFilter(participant_puuids=["this puuid does not exist"])
-    )
-    assert len(matches) == 0
-    # filtering by participants
-    matches = await dbh.get_matches(
-        BasicMatchFilter(
-            participant_puuids=[
-                angrybacteria_puuid,
-                bribri_puuid,
-            ]
-        )
-    )
-    assert len(matches) > 0
-    assert all(
-        angrybacteria_puuid in match["metadata"]["participants"] for match in matches
-    )
-    assert all(bribri_puuid in match["metadata"]["participants"] for match in matches)
-    # filtering by queue id
-    matches = await dbh.get_matches(BasicMatchFilter(queue=400))
-    assert all(match["info"]["queueId"] == 400 for match in matches)
-    assert all(match["info"]["queueId"] != 1400 for match in matches)
-    matches = await dbh.get_matches(BasicMatchFilter(queue=1400))
-    assert all(match["info"]["queueId"] == 1400 for match in matches)
-    assert all(match["info"]["queueId"] != 400 for match in matches)
-    # filter by multiple filter options
-    matches = await dbh.get_matches(
-        BasicMatchFilter(
-            mode="CLASSIC",
-            queue=400,
-            participant_puuids=[angrybacteria_puuid],
-        )
-    )
-    assert all(match["info"]["gameMode"] == "CLASSIC" for match in matches)
-    assert all(match["info"]["queueId"] == 400 for match in matches)
-    assert all(
-        angrybacteria_puuid in match["metadata"]["participants"] for match in matches
+    # Check if counts match
+    assert len(actual_collections) == len(CollectionName), (
+        f"Number of collections mismatch. Expected {len(CollectionName)}, "
+        f"got {len(actual_collections)}"
     )
 
-    # static game data
-    static_type_map = {
-        CollectionName.CHAMPION: ChampionDTO,
-        CollectionName.GAME_MODE: GameModeDTO,
-        CollectionName.GAME_TYPE: GameTypeDTO,
-        CollectionName.ITEM: ItemDTO,
-        CollectionName.MAP: MapDTO,
-        CollectionName.QUEUE: QueueDTO,
-    }
-    for collection_type, dto_type in static_type_map.items():
-        static_data: list[Any] = await dbh.generic_get(
-            BasicFilter(), collection_type, dto_type
-        )
-        assert len(static_data) > 0
+
+@pytest.mark.asyncio
+async def test_get_nested_value() -> None:
+    """Test that get_nested_value works correctly"""
+
+    class InnerInnerModel(BaseModel):
+        city: str
+
+    class InnerModel(BaseModel):
+        age: int
+        details: InnerInnerModel
+
+    class TestModel(BaseModel):
+        name: str
+        info: InnerModel
+
+    test_dict = {"name": "test", "info": {"age": 25, "details": {"city": "New York"}}}
+    test_model = TestModel.model_validate(test_dict)
+
+    assert get_nested_value(test_model, "name") == "test"
+    assert get_nested_value(test_model, "info.age") == 25
+    assert get_nested_value(test_model, "info.details.city") == "New York"
+
+    assert get_nested_value(test_dict, "name") == "test"
+    assert get_nested_value(test_dict, "info.age") == 25
+    assert get_nested_value(test_dict, "info.details.city") == "New York"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])

@@ -430,9 +430,7 @@ class RiotHelper:
                 "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-spells.json",
                 use_limiter=False,
             )
-            spells = [
-                SummonerSpellDTO.model_validate(data) for data in raw_data
-            ]
+            spells = [SummonerSpellDTO.model_validate(data) for data in raw_data]
             for spell in spells:
                 spell.iconPath = map_asset_path(spell.iconPath)
 

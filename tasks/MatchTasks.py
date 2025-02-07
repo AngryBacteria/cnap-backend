@@ -1,8 +1,9 @@
 import asyncio
 
-from helpers.DBHelper import DBHelper, SummonerFilter, CollectionName
+from helpers.DBHelper import DBHelper, CollectionName, BasicFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
+from models.SummonerDTODB import SummonerDTODB
 
 
 class MatchTasks:
@@ -13,8 +14,8 @@ class MatchTasks:
     async def update_match_data(
         self, count: int = 69, offset: int = 0, puuid: str = ""
     ) -> None:
-        existing_summoners = await self.db_helper.get_summoners(
-            SummonerFilter(limit=10000, puuid=puuid)
+        existing_summoners = await self.db_helper.generic_get(
+            BasicFilter(), CollectionName.SUMMONER, SummonerDTODB
         )
         if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(

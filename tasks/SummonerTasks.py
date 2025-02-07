@@ -3,9 +3,10 @@ import os
 
 from dotenv import load_dotenv
 
-from helpers.DBHelper import DBHelper, SummonerFilter, CollectionName
+from helpers.DBHelper import DBHelper, CollectionName, BasicFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
+from models.SummonerDTODB import SummonerDTODB
 
 
 class SummonerTasks:
@@ -65,8 +66,8 @@ class SummonerTasks:
 
     # Update the summoner data of all summoners in the summoners collection
     async def update_summoner_data(self) -> None:
-        existing_summoners = await self.db_helper.get_summoners(
-            SummonerFilter(limit=1000)
+        existing_summoners = await self.db_helper.generic_get(
+            BasicFilter(), CollectionName.SUMMONER, SummonerDTODB
         )
         if existing_summoners and len(existing_summoners) > 0:
             new_summoners = []
