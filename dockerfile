@@ -31,6 +31,7 @@ EXPOSE 8000
 # Set a default value for RUN_TYPE
 ENV RUN_TYPE=server
 ENV PATH="/home/dockeruser/.local/bin:${PATH}"
+ENV PYTHONPATH="/home/dockeruser/workspace:${PYTHONPATH}"
 
 # Use the entrypoint script
 CMD ["./entrypoint.sh"]

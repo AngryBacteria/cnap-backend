@@ -5,15 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1fb98891-ca8d-4147-85c0-5fa421ec98fd" name="Changes" comment="hotfix task (no filter was supplied)">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/DBHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DBHelper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/RiotHelper.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/RiotHelper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/MatchTasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/MatchTasks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/SummonerTasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/SummonerTasks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/static/helloworld.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_db_helper.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_riot_helper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/dockerfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -327,6 +319,7 @@
       <workItem from="1738878171973" duration="1742000" />
       <workItem from="1738887041088" duration="221000" />
       <workItem from="1738922804974" duration="106000" />
+      <workItem from="1739032588461" duration="73000" />
     </task>
     <task id="LOCAL-00001" summary="added timeline">
       <option name="closed" value="true" />
