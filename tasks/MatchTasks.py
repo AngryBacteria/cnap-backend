@@ -15,7 +15,7 @@ class MatchTasks:
         self, count: int = 69, offset: int = 0, puuid: str = ""
     ) -> None:
         existing_summoners = await self.db_helper.generic_get(
-            BasicFilter(), CollectionName.SUMMONER, SummonerDTODB
+            BasicFilter(limit=100000), CollectionName.SUMMONER, SummonerDTODB
         )
         if not existing_summoners or len(existing_summoners) == 0:
             app_logger.debug(

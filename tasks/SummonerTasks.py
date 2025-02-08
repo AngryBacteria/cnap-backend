@@ -67,7 +67,7 @@ class SummonerTasks:
     # Update the summoner data of all summoners in the summoners collection
     async def update_summoner_data(self) -> None:
         existing_summoners = await self.db_helper.generic_get(
-            BasicFilter(), CollectionName.SUMMONER, SummonerDTODB
+            BasicFilter(limit=100000), CollectionName.SUMMONER, SummonerDTODB
         )
         if existing_summoners and len(existing_summoners) > 0:
             new_summoners = []
