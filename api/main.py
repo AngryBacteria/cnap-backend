@@ -1,6 +1,6 @@
 import sys
 from time import perf_counter
-from typing import Dict, Any, Generator
+from typing import Dict, Any
 
 from fastapi import FastAPI, HTTPException, Request
 from starlette.staticfiles import StaticFiles
@@ -97,7 +97,7 @@ async def get_champions_reduced() -> list[dict[str, Any]]:
         raise HTTPException(status_code=500, detail="No champion data available")
 
 
-@app.get("/champions/{champion_alias}")
+@app.get("/champion/{champion_alias}")
 async def get_champions(champion_alias: str) -> ChampionDTO:
     champions = await dbh.generic_get(
         BasicFilter(
@@ -111,6 +111,32 @@ async def get_champions(champion_alias: str) -> ChampionDTO:
         return champions[0]
     else:
         raise HTTPException(status_code=404, detail="Champion not found")
+
+
+@app.get("/matches/champion/{champion_id}")
+async def get_matches_champion(champion_id: int) -> list[dict[str, Any]]:
+    cursor = dbh.get_collection(CollectionName.MATCH).aggregate(
+        [
+            {"$match": {"info.participants.championId": champion_id}},
+            {
+                "$unwind": {
+                    "path": "$info.participants",
+                    "preserveNullAndEmptyArrays": True,
+                }
+            },
+            {"$match": {"info.participants.championId": champion_id}},
+            {"$sort": {"info.gameCreation": -1}},
+            {"$limit": 10},
+            {"$skip": 0},
+            {"$project": {"_id": 0}},
+        ]
+    )
+
+    data = await cursor.to_list(length=None)
+    if len(data) > 0:
+        return data
+    else:
+        raise HTTPException(status_code=404, detail="No match data found for champion")
 
 
 @app.get("/queues")

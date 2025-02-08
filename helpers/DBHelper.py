@@ -4,7 +4,6 @@ from typing import Literal, Union, Type, TypeVar, overload, Sequence
 
 from motor.motor_asyncio import (
     AsyncIOMotorCollection,
-    AsyncIOMotorGridFSBucket,
 )
 
 from pymongo import UpdateOne
