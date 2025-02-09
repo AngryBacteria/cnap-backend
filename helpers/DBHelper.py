@@ -154,6 +154,9 @@ class DBHelper:
             await self.get_collection(CollectionName.MATCH).create_index(
                 "info.gameType", unique=False
             )
+            await self.get_collection(CollectionName.MATCH).create_index(
+                "info.participants.championId", unique=False
+            )
             app_logger.debug("Created match indexes")
 
             await self.get_collection(CollectionName.TIMELINE).create_index(

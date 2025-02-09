@@ -23,7 +23,7 @@ class SummonerTasks:
             raise Exception("No ACCOUNTS_STRING string provided, aborting...")
 
         accounts_string_seperated = accounts_string.split(",")
-        summoner_objects = []
+        summoner_objects: list[SummonerDTODB] = []
         for account in accounts_string_seperated:
             if len(account.strip().split("_")) > 1:
                 name = account.strip().split("_")[0]
@@ -70,7 +70,7 @@ class SummonerTasks:
             BasicFilter(limit=100000), CollectionName.SUMMONER, SummonerDTODB
         )
         if existing_summoners and len(existing_summoners) > 0:
-            new_summoners = []
+            new_summoners: list[SummonerDTODB] = []
             for summoner in existing_summoners:
                 summoner_riot = await self.riot_helper.get_summoner_by_puuid_riot(
                     summoner.puuid

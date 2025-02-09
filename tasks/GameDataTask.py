@@ -5,9 +5,6 @@ from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
 
 
-# TODO summoner spells, summoner icons
-
-
 class GameDataTask:
     def __init__(self) -> None:
         self.db_helper = DBHelper.get_instance()
@@ -39,6 +36,7 @@ class GameDataTask:
                 "gameMode",
                 CollectionName.GAME_MODE,
                 data_name="game mode",
+                validator=None,
             )
             app_logger.debug("Game modes updated")
 
@@ -53,6 +51,7 @@ class GameDataTask:
                 "gametype",
                 CollectionName.GAME_TYPE,
                 data_name="game type",
+                validator=None,
             )
             app_logger.debug("Game types updated")
 
@@ -82,6 +81,7 @@ class GameDataTask:
                 "mapId",
                 CollectionName.MAP,
                 data_name="map",
+                validator=None,
             )
             app_logger.debug("Maps updated")
 
@@ -96,6 +96,7 @@ class GameDataTask:
                 "queueId",
                 CollectionName.QUEUE,
                 data_name="queue",
+                validator=None,
             )
             app_logger.debug("Queues updated")
 
@@ -110,6 +111,7 @@ class GameDataTask:
                 "id",
                 CollectionName.SUMMONER_ICON,
                 data_name="summoner_icon",
+                validator=None,
             )
             app_logger.debug("Summoner icons updated")
 
@@ -124,6 +126,7 @@ class GameDataTask:
                 "id",
                 CollectionName.SUMMONER_SPELL,
                 data_name="summoner_spell",
+                validator=None,
             )
             app_logger.debug("Summoner spells updated")
 

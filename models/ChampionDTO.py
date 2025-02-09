@@ -133,3 +133,12 @@ class ChampionDTO(BaseConfig):
     passive: LolV1ChampionPassive
     spells: List[LolV1ChampionSpell]
     uncenteredSplashPath: str
+
+
+class ChampionReducedDTO(BaseConfig):
+    id: int
+    name: str
+    alias: str
+    title: str
+    shortBio: str
+    uncenteredSplashPath: str
