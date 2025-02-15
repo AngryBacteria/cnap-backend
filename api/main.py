@@ -16,10 +16,12 @@ from helpers.RiotHelper import RiotHelper
 from models.ChampionDTO import ChampionDTO, ChampionReducedDTO
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from models.GlobalPydanticConfig import BaseConfig
+from models.MatchV5DTO import MatchV5SingleDTO
 from models.QueueDTO import QueueDTO
 from models.ItemDTO import ItemDTO
 from models.SummonerSpellDTO import SummonerSpellDTO
-from models.SummonerDTODB import SummonerDTODB
+from models.SummonerDBDTO import SummonerDBDTO
 
 
 dbh = DBHelper.get_instance()
@@ -113,7 +115,15 @@ async def get_champions(champion_alias: str) -> JSONResponse:
         raise HTTPException(status_code=404, detail="Champion not found")
 
 
-@app.get("/matches/champion/{champion_id}", response_model=dict)
+class MatchesByChampionResponse(BaseConfig):
+    page: int
+    maxPage: int
+    data: list[MatchV5SingleDTO]
+
+
+@app.get(
+    "/matches/champion/{champion_id}", response_model=list[MatchesByChampionResponse]
+)
 async def get_matches_by_champion(
     champion_id: int,
     page: int = 1,
@@ -159,11 +169,11 @@ async def get_matches_by_champion(
     metadata = result[0].get("metadata", [])
     total = metadata[0]["total"] if metadata else 0
 
-    if total == 0:
-        raise HTTPException(status_code=404, detail="No match data found for champion")
-
     max_page = (total + page_size - 1) // page_size
     data = result[0].get("data", [])
+
+    if total == 0 or len(data) == 0:
+        raise HTTPException(status_code=404, detail="No match data found for champion")
 
     return JSONResponse(content={"page": page, "maxPage": max_page, "data": data})
 
@@ -210,7 +220,7 @@ async def get_summoner_spells() -> JSONResponse:
         raise HTTPException(status_code=500, detail="No summoner spell data available")
 
 
-@app.get("/summoners", response_model=SummonerDTODB)
+@app.get("/summoners", response_model=SummonerDBDTO)
 async def get_summoners() -> JSONResponse:
     summoners = await dbh.generic_get(
         BasicFilter(

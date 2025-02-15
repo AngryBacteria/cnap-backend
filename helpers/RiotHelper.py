@@ -18,7 +18,7 @@ from models.ItemDTO import ItemDTO
 from models.MapDTO import MapDTO
 from models.QueueDTO import QueueDTO
 from models.SummonerDTO import SummonerDTO
-from models.SummonerDTODB import SummonerDTODB
+from models.SummonerDBDTO import SummonerDBDTO
 from models.SummonerIconDTO import SummonerIconDTO
 from models.SummonerSpellDTO import SummonerSpellDTO
 
@@ -228,13 +228,13 @@ class RiotHelper:
 
     async def get_summoner_by_puuid_riot(
         self, puuid: str, account: Optional[AccountDTO] = None
-    ) -> Optional[SummonerDTODB]:
+    ) -> Optional[SummonerDBDTO]:
         """
         Fetch a summoner from the Riot-API by puuid. Additionally, the account is also fetched to get the gameName and
-        tagLine. The summoner and account data is then merged into a SummonerDTODB object.
+        tagLine. The summoner and account data is then merged into a SummonerDBDTO object.
         :param puuid: The puuid of the summoner to fetch
         :param account: Optionally provide the account directly doesn't need to be fetched again
-        :return: SummonerDTODB object with the merged data
+        :return: SummonerDBDTO object with the merged data
         """
         try:
             url = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
@@ -245,7 +245,7 @@ class RiotHelper:
                 account = await self.get_riot_account_by_puuid(summonerDTO.puuid)
             if account:
                 dict_concat = summonerDTO.model_dump() | account.model_dump()
-                return SummonerDTODB.model_validate(dict_concat)
+                return SummonerDBDTO.model_validate(dict_concat)
             else:
                 raise ValueError("Account not found")
 
@@ -257,13 +257,13 @@ class RiotHelper:
 
     async def get_summoner_by_account_tag(
         self, name: str, tag: str
-    ) -> Optional[SummonerDTODB]:
+    ) -> Optional[SummonerDBDTO]:
         """
         Fetch a summoner from the Riot-API by name and tag. The account is fetched first and then the summoner is
         fetched by the puuid.
         :param name: Name of the account
         :param tag: Tag of the account (4 characters)
-        :return: SummonerDTODB object
+        :return: SummonerDBDTO object
         """
         try:
             account = await self.get_riot_account_by_tag(name, tag)

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from helpers.DBHelper import DBHelper, CollectionName, BasicFilter
 from helpers.Logger import app_logger
 from helpers.RiotHelper import RiotHelper
-from models.SummonerDTODB import SummonerDTODB
+from models.SummonerDBDTO import SummonerDBDTO
 
 
 class SummonerTasks:
@@ -23,7 +23,7 @@ class SummonerTasks:
             raise Exception("No ACCOUNTS_STRING string provided, aborting...")
 
         accounts_string_seperated = accounts_string.split(",")
-        summoner_objects: list[SummonerDTODB] = []
+        summoner_objects: list[SummonerDBDTO] = []
         for account in accounts_string_seperated:
             if len(account.strip().split("_")) > 1:
                 name = account.strip().split("_")[0]
@@ -67,10 +67,10 @@ class SummonerTasks:
     # Update the summoner data of all summoners in the summoners collection
     async def update_summoner_data(self) -> None:
         existing_summoners = await self.db_helper.generic_get(
-            BasicFilter(limit=100000), CollectionName.SUMMONER, SummonerDTODB
+            BasicFilter(limit=100000), CollectionName.SUMMONER, SummonerDBDTO
         )
         if existing_summoners and len(existing_summoners) > 0:
-            new_summoners: list[SummonerDTODB] = []
+            new_summoners: list[SummonerDBDTO] = []
             for summoner in existing_summoners:
                 summoner_riot = await self.riot_helper.get_summoner_by_puuid_riot(
                     summoner.puuid
