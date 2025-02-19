@@ -121,6 +121,7 @@ class MatchesByChampionResponse(BaseConfig):
     data: list[MatchV5SingleDTO]
 
 
+# TODO: add queues id to filtering
 @app.get(
     "/matches/champion/{champion_id}", response_model=list[MatchesByChampionResponse]
 )
