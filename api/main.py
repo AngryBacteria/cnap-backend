@@ -1,8 +1,8 @@
 import sys
 from time import perf_counter
-from typing import Dict, Any, Mapping, Sequence
+from typing import Dict, Any, Mapping, Sequence, Annotated
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
@@ -121,49 +121,78 @@ class MatchesByChampionResponse(BaseConfig):
     data: list[MatchV5SingleDTO]
 
 
-# TODO: add queues id to filtering
 @app.get(
     "/matches/champion/{champion_id}", response_model=list[MatchesByChampionResponse]
 )
 async def get_matches_by_champion(
     champion_id: int,
+    queue_id: Annotated[int | None, Query()] = None,
+    only_summoners_in_db: Annotated[bool, Query()] = True,
     page: int = 1,
 ) -> JSONResponse:
+    # Pagination
     page_size = 10
     skip = (page - 1) * page_size
 
-    existingSummonerPuuids = await dbh.generic_get(
-        BasicFilter(
-            limit=100000,
-            project={"puuid": 1},
-        ),
-        CollectionName.SUMMONER,
-    )
-    summonerPuuids = [summoner["puuid"] for summoner in existingSummonerPuuids]
+    # Init the pipeline
+    pipeline: list[Mapping[str, Any]] = []
 
-    pipeline: Sequence[Mapping[str, Any]] = [
-        {"$match": {"info.participants.championId": champion_id}},
-        {"$match": {"info.participants.puuid": {"$in": summonerPuuids}}},
+    # Filter by champion id
+    pipeline.append({"$match": {"info.participants.championId": champion_id}})
+
+    # Optionally Filter by summoner puuids
+    if only_summoners_in_db:
+        existingSummonerPuuids = await dbh.generic_get(
+            BasicFilter(
+                limit=100000,
+                project={"puuid": 1},
+            ),
+            CollectionName.SUMMONER,
+        )
+        summonerPuuids = [summoner["puuid"] for summoner in existingSummonerPuuids]
+        pipeline.append(
+            {"$match": {"info.participants.puuid": {"$in": summonerPuuids}}}
+        )
+
+    # Filter by queue id
+    if queue_id is not None:
+        pipeline.append({"$match": {"info.queueId": queue_id}})
+
+    # Unwind
+    pipeline.append(
         {
             "$unwind": {
                 "path": "$info.participants",
                 "preserveNullAndEmptyArrays": True,
             }
-        },
-        {"$match": {"info.participants.championId": champion_id}},
-        {"$match": {"info.participants.puuid": {"$in": summonerPuuids}}},
-        {"$sort": {"info.gameCreation": -1}},
-        {
-            "$facet": {
-                "metadata": [{"$count": "total"}],
-                "data": [
-                    {"$skip": skip},
-                    {"$limit": page_size},
-                    {"$project": {"_id": 0}},
-                ],
-            }
-        },
-    ]
+        }
+    )
+
+    # Filter unwinded documents again by by champion_id
+    pipeline.append({"$match": {"info.participants.championId": champion_id}})
+
+    # Optionally filter unwinded documents again by summoner puuids
+    if only_summoners_in_db:
+        pipeline.append(
+            {"$match": {"info.participants.puuid": {"$in": summonerPuuids}}}
+        )
+
+    # Sort and paginate
+    pipeline.extend(
+        [
+            {"$sort": {"info.gameCreation": -1}},
+            {
+                "$facet": {
+                    "metadata": [{"$count": "total"}],
+                    "data": [
+                        {"$skip": skip},
+                        {"$limit": page_size},
+                        {"$project": {"_id": 0}},
+                    ],
+                }
+            },
+        ]
+    )
 
     cursor = dbh.get_collection(CollectionName.MATCH).aggregate(pipeline)
     result = await cursor.to_list(length=None)
@@ -172,9 +201,6 @@ async def get_matches_by_champion(
 
     max_page = (total + page_size - 1) // page_size
     data = result[0].get("data", [])
-
-    if total == 0 or len(data) == 0:
-        raise HTTPException(status_code=404, detail="No match data found for champion")
 
     return JSONResponse(content={"page": page, "maxPage": max_page, "data": data})
 
